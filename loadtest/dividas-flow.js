@@ -26,7 +26,7 @@ export const options = {
 
 const BASE_URL = __ENV.BASE_URL || "http://localhost:3000";
 
-export default function () {
+export default function loadTest() {
   const loginPage = http.get(`${BASE_URL}/login`);
   check(loginPage, { "login retorna 200": (r) => r.status === 200 });
   sleep(1);
