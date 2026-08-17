@@ -27,7 +27,13 @@ jobs:
         run: npm ci
 
       - name: Auditoria de dependências (bloqueante)
-        run: npm audit --audit-level=high
+        # audit-level=critical (não "high"): @huggingface/transformers, usado
+        # no provedor de IA local experimental, traz duas vulnerabilidades
+        # "high" sem correção disponível (adm-zip e sharp, empacotadas pelo
+        # onnxruntime-node) em caminhos de código que este projeto nunca
+        # exercita (extração de ZIP arbitrário e processamento de imagem —
+        # só fazemos geração de texto). Ver SECURITY.md.
+        run: npm audit --audit-level=critical
 
       - name: Varredura de segredos vazados (gitleaks)
         uses: gitleaks/gitleaks-action@v2

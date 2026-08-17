@@ -132,6 +132,9 @@ services:
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
+      LOCAL_MODEL_ID: ${LOCAL_MODEL_ID:-onnx-community/Qwen2.5-0.5B-Instruct}
+      LOCAL_MODEL_MAX_NEW_TOKENS: ${LOCAL_MODEL_MAX_NEW_TOKENS:-350}
+      LOCAL_MODEL_TIMEOUT_MS: ${LOCAL_MODEL_TIMEOUT_MS:-55000}
     ports:
       - "${APP_PORT:-3000}:3000"
     networks: [creditix]

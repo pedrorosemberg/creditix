@@ -50,6 +50,35 @@ Se você rodar o stack self-hosted (`docker/`), a segurança do ambiente também
 - Mantenha as imagens Docker atualizadas (`docker compose pull`).
 - Faça backup regular do volume `db-data`.
 
+## Análise por IA local embutida (experimental)
+
+O provedor `AI_PROVIDER=local` roda um modelo pequeno (ONNX, via
+`@huggingface/transformers`) dentro do próprio processo do servidor, sem
+enviar dados a nenhuma API externa — só os pesos do modelo (arquivos
+públicos, sem informação do usuário) são baixados na primeira execução.
+
+Essa dependência traz duas vulnerabilidades conhecidas, sem correção
+disponível no momento, em pacotes transitivos do `onnxruntime-node`:
+
+- `adm-zip` (GHSA-xcpc-8h2w-3j85): alocação excessiva de memória ao abrir
+  um ZIP malicioso.
+- `sharp`/libvips (GHSA-f88m-g3jw-g9cj): vulnerabilidades de processamento
+  de imagem.
+
+Nenhum dos dois caminhos é exercitado pelo Creditix — usamos apenas o
+pipeline de geração de texto, nunca extração de ZIP arbitrário nem
+processamento de imagem. Por isso o gate de CI (`security-load-gate.yml`)
+usa `npm audit --audit-level=critical` em vez de `high` só para este
+projeto. Revise essa decisão se o uso do modelo local mudar (ex.: passar a
+processar imagens enviadas por usuários).
+
+Em ambientes serverless (Vercel), esse provedor é best-effort: o disco
+(`/tmp`) não é garantido entre execuções, então o modelo pode ser baixado
+novamente a cada cold start, e funções serverless têm limites de tempo e
+memória que um modelo maior pode não caber. Se a geração falhar por
+qualquer motivo, a análise por IA simplesmente retorna erro — o restante
+do site não é afetado.
+
 ## Conformidade
 
 O Creditix foi desenhado considerando os princípios da LGPD (Lei 13.709/2018): minimização de dados,

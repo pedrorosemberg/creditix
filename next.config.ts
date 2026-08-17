@@ -27,6 +27,10 @@ const nextConfig: NextConfig = {
   // output standalone). docker/Dockerfile define DOCKER_BUILD=1 antes de
   // rodar "npm run build"; a Vercel nunca define essa variável.
   output: process.env.DOCKER_BUILD === "1" ? "standalone" : undefined,
+  // @huggingface/transformers (modelo de IA local embutido) traz binários
+  // nativos (onnxruntime-node) que não podem ser processados pelo
+  // bundler — precisam ser carregados como módulo Node normal em runtime.
+  serverExternalPackages: ["@huggingface/transformers", "onnxruntime-node", "sharp"],
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

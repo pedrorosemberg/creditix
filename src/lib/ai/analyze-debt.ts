@@ -1,13 +1,20 @@
 import "server-only";
 import { OllamaProvider } from "./ollama";
 import { GeminiProvider } from "./gemini";
+import { LocalModelProvider } from "./local";
 import type { AiProvider } from "./provider";
 import { analisarDivida } from "@/lib/legal/analisar-divida";
 import type { Debt } from "@/types/database.types";
 
 function obterProvedor(): AiProvider {
-  const escolhido = process.env.AI_PROVIDER === "gemini" ? "gemini" : "ollama";
-  return escolhido === "gemini" ? new GeminiProvider() : new OllamaProvider();
+  switch (process.env.AI_PROVIDER) {
+    case "gemini":
+      return new GeminiProvider();
+    case "local":
+      return new LocalModelProvider();
+    default:
+      return new OllamaProvider();
+  }
 }
 
 function montarPrompt(divida: Debt): string {

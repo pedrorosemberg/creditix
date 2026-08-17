@@ -19,7 +19,7 @@ export type RecorrenciaDb = "mensal" | "unica";
 export type TipoTransacaoDb = "receita" | "despesa" | "pagamento_divida";
 export type ModalidadePagamentoDb = "avista" | "parcelado";
 export type StatusPlanoDb = "simulado" | "proposto" | "aceito" | "recusado";
-export type ProvedorIaDb = "ollama" | "gemini";
+export type ProvedorIaDb = "ollama" | "gemini" | "local";
 
 export type Profile = {
   id: string;

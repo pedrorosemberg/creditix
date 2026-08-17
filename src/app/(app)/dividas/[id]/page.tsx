@@ -12,6 +12,11 @@ import { fundamento } from "@/lib/legal/fundamentos";
 import { formatarData, formatarMoeda, formatarPercentual } from "@/lib/utils";
 import { AnaliseIaPainel } from "@/components/dividas/analise-ia-painel";
 
+// Dá mais tempo à Server Action de análise por IA — em especial o
+// provedor "local" (modelo embutido), que pode ser lento no cold start.
+// A Vercel aplica o menor valor entre este número e o limite do plano.
+export const maxDuration = 60;
+
 export default async function DividaDetalhePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();

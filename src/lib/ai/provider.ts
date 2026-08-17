@@ -1,7 +1,7 @@
 import "server-only";
 
 export type AiProviderResult = {
-  provider: "ollama" | "gemini";
+  provider: "ollama" | "gemini" | "local";
   model: string;
   content: string;
 };
