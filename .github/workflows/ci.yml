@@ -33,10 +33,10 @@ jobs:
         run: npm run lint
 
       - name: Typecheck
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
       - name: Testes unitários
-        run: npx vitest run
+        run: npm run test
 
       - name: Build de produção
         run: npm run build
