@@ -1,0 +1,52 @@
+name: Security & Load Gate (hmg → prod)
+
+# Gate adicional, obrigatório apenas para promover hmg -> prod. Configure
+# como "required status check" na proteção da branch prod (veja
+# docs/ENVIRONMENTS.md). Roda em qualquer PR contra prod, e também pode
+# ser disparado manualmente para validar a hmg antes de abrir a PR.
+
+on:
+  pull_request:
+    branches: [prod]
+  workflow_dispatch:
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Auditoria de dependências (bloqueante)
+        run: npm audit --audit-level=high
+
+      - name: Varredura de segredos vazados (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  load-test:
+    runs-on: ubuntu-latest
+    # Só roda de fato se a URL do ambiente de homologação estiver configurada
+    # como secret do repositório (HMG_BASE_URL). Sem isso, o job é pulado em
+    # vez de falhar — a suíte de carga real é responsabilidade do time antes
+    # de aprovar a promoção para prod.
+    if: ${{ vars.HMG_BASE_URL != '' || secrets.HMG_BASE_URL != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rodar suíte de carga (k6)
+        uses: grafana/k6-action@v0.3.1
+        with:
+          filename: loadtest/dividas-flow.js
+        env:
+          BASE_URL: ${{ vars.HMG_BASE_URL || secrets.HMG_BASE_URL }}

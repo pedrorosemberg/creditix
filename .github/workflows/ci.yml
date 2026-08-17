@@ -1,0 +1,49 @@
+name: CI
+
+# Gate obrigatório para promoção entre ambientes: nenhuma PR para hmg ou
+# prod deve ser mergeada sem este workflow verde (configure isso como
+# "required status check" na proteção das branches hmg e prod — veja
+# docs/ENVIRONMENTS.md).
+
+on:
+  push:
+    branches: [dev, hmg, prod]
+  pull_request:
+    branches: [dev, hmg, prod]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-typecheck-test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Testes unitários
+        run: npx vitest run
+
+      - name: Build de produção
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: http://localhost:8000
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: build-placeholder
+
+      - name: Auditoria de dependências (falhas críticas/altas)
+        run: npm audit --audit-level=high
+        continue-on-error: true

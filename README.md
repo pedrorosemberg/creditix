@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Creditix
 
-## Getting Started
+Organize suas dívidas, monte um plano de recuperação financeira real e identifique cobranças de juros
+abusivos — com base em legislação e jurisprudência brasileiras vigentes. Um produto **METADAX**
+(`creditix.metadax.com.br`).
 
-First, run the development server:
+> Aplicativo privado: cada pessoa cria sua própria conta e só enxerga seus próprios dados (Row Level
+> Security no banco). Veja [`SECURITY.md`](./SECURITY.md).
+
+## O que o Creditix faz
+
+- **Cadastro de dívidas** com os dados típicos de um relatório do Serasa: credor, contrato, produto,
+  datas, valor original/atual, negativação e desconto para pagamento à vista.
+- **Análise de juros por dívida**: taxa implícita estimada, comparação com o teto legal (credores não
+  financeiros) ou faixas de mercado (instituições financeiras), veredito de abusividade e checagem de
+  possível prescrição — com os fundamentos jurídicos citados (CDC, Lei de Usura, Lei do
+  Superendividamento, súmulas do STJ/STF).
+- **Relatório individual exportável** em PDF e CSV.
+- **Plano de recuperação financeira** com simulação à vista vs. parcelado para cada dívida, priorização
+  configurável (avalanche, bola de neve ou jurídica primeiro) e recomendação de repactuação judicial
+  quando o cenário exigir.
+- **Orçamento e transações**: registro de renda, gastos e lançamentos livres.
+- **Lembretes mensais por e-mail** (Resend) com as contas do mês.
+- **Parecer por IA** processado inteiramente no servidor (Ollama local por padrão; Gemini opcional).
+
+## Stack
+
+Next.js 16 (App Router) · Supabase (self-hosted ou Cloud) · Tailwind v4 · Resend · Ollama/Gemini ·
+TypeScript · Vitest. Detalhes em [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md).
+
+## Começando
 
 ```bash
+npm install
+cp .env.example .env.local   # preencha com seu Supabase (veja docs/SETUP.md)
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Guia completo (nuvem ou self-hosted com Docker) em [`docs/SETUP.md`](./docs/SETUP.md).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Ambientes e branches
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Este repositório usa três branches de longa duração — `dev` (desenvolvimento) → `hmg` (homologação:
+testes de carga e segurança) → `prod` (`creditix.metadax.com.br`) — com promoção via Pull Request
+bloqueada por checks obrigatórios de CI. Detalhes em [`docs/ENVIRONMENTS.md`](./docs/ENVIRONMENTS.md).
 
-## Learn More
+## Checagens locais
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run lint
+npx tsc --noEmit
+npx vitest run
+npm run build
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Aviso legal
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+O conteúdo jurídico exibido pelo Creditix (fundamentos legais, veredito de abusividade, próximos passos)
+é orientativo, gerado a partir de regras determinísticas e/ou IA, e **não substitui aconselhamento
+jurídico individualizado** por advogado(a) ou pela Defensoria Pública.
 
-## Deploy on Vercel
+## Licença
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT — veja [`LICENSE`](./LICENSE).
