@@ -137,6 +137,14 @@ export type ReminderSend = {
   created_at: string;
 };
 
+export type EmailEvent = {
+  id: string;
+  resend_email_id: string | null;
+  event_type: string;
+  payload: unknown;
+  created_at: string;
+};
+
 type TableDef<Row, Insert, Update = Partial<Insert>> = {
   Row: Row;
   Insert: Insert;
@@ -179,6 +187,10 @@ export type Database = {
       reminder_sends: TableDef<
         ReminderSend,
         Omit<ReminderSend, "id" | "created_at"> & { id?: string }
+      >;
+      email_events: TableDef<
+        EmailEvent,
+        Omit<EmailEvent, "id" | "created_at"> & { id?: string }
       >;
     };
     Views: Record<string, never>;
