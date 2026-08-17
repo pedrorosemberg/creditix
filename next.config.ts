@@ -22,8 +22,11 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  // Build enxuto para a imagem Docker (docker/Dockerfile).
-  output: "standalone",
+  // Build enxuto (standalone) só para a imagem Docker — na Vercel isso
+  // quebra o build (ela espera o formato de trace normal do Next, não o
+  // output standalone). docker/Dockerfile define DOCKER_BUILD=1 antes de
+  // rodar "npm run build"; a Vercel nunca define essa variável.
+  output: process.env.DOCKER_BUILD === "1" ? "standalone" : undefined,
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

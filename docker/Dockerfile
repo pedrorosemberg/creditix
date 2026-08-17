@@ -15,6 +15,7 @@ COPY . .
 ENV NEXT_PUBLIC_SUPABASE_URL=http://localhost:8000
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=build-placeholder
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV DOCKER_BUILD=1
 RUN npm run build
 
 FROM node:22-alpine AS runner
