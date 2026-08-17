@@ -7,4 +7,4 @@ export function getResendClient(): Resend | null {
   return new Resend(apiKey);
 }
 
-export const REMETENTE_PADRAO = process.env.RESEND_FROM_EMAIL ?? "Creditix <lembretes@creditix.metadax.com.br>";
+export const REMETENTE_PADRAO = process.env.RESEND_FROM_EMAIL || "Creditix <lembretes@creditix.metadax.com.br>";

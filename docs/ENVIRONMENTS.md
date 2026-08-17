@@ -45,6 +45,16 @@ mesma instância Supabase/Ollama/Resend entre ambientes. Na Vercel, isso é feit
 um Environment (Preview para `dev`/`hmg`, Production para `prod`) com suas próprias env vars. Veja
 `.env.example` para a lista completa de variáveis e `docs/SETUP.md` para o passo a passo.
 
+### Banco de dados por ambiente (situação atual)
+
+- **`prod`**: projeto Supabase Cloud oficial `creditix` (org METADAX LTDA, região `sa-east-1`).
+  URL/chaves ficam apenas nas env vars da Vercel (Production), nunca no repositório.
+- **`dev`/`hmg`**: recomendado usar o stack self-hosted (`docker/`) enquanto a organização Supabase
+  estiver no plano free — o limite é de 2 projetos ativos simultâneos por administrador, e criar mais um
+  projeto hospedado para `dev`/`hmg` exigiria pausar outro projeto da conta ou fazer upgrade de plano.
+  Quando isso deixar de ser um limitador, o ideal é cada ambiente ter seu próprio projeto Supabase
+  hospedado, isolado dos demais.
+
 ## Domínio de produção
 
 `prod` deve ser o único ambiente apontado por `creditix.metadax.com.br`. `dev` e `hmg` devem usar

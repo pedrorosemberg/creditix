@@ -9,7 +9,7 @@ import type { AiProvider, AiProviderResult } from "./provider";
 export class GeminiProvider implements AiProvider {
   constructor(
     private readonly apiKey = process.env.GEMINI_API_KEY,
-    private readonly model = process.env.GEMINI_MODEL ?? "gemini-2.0-flash",
+    private readonly model = process.env.GEMINI_MODEL || "gemini-2.0-flash",
   ) {}
 
   async gerar(prompt: string): Promise<AiProviderResult> {

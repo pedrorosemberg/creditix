@@ -9,8 +9,8 @@ import type { AiProvider, AiProviderResult } from "./provider";
  */
 export class OllamaProvider implements AiProvider {
   constructor(
-    private readonly host = process.env.OLLAMA_HOST ?? "http://localhost:11434",
-    private readonly model = process.env.OLLAMA_MODEL ?? "llama3.1",
+    private readonly host = process.env.OLLAMA_HOST || "http://localhost:11434",
+    private readonly model = process.env.OLLAMA_MODEL || "llama3.1",
   ) {}
 
   async gerar(prompt: string): Promise<AiProviderResult> {

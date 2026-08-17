@@ -15,7 +15,7 @@ const audiowide = Audiowide({
   weight: "400",
 });
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://creditix.metadax.com.br";
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://creditix.metadax.com.br";
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),

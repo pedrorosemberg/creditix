@@ -24,7 +24,7 @@ export async function GET(request: Request) {
   const hoje = new Date();
   const diaHoje = hoje.getUTCDate();
   const mesReferencia = `${hoje.getUTCFullYear()}-${String(hoje.getUTCMonth() + 1).padStart(2, "0")}-01`;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://creditix.metadax.com.br";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://creditix.metadax.com.br";
 
   const { data: perfis, error: perfisError } = await admin
     .from("profiles")
