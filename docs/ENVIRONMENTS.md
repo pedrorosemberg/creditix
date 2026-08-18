@@ -8,35 +8,104 @@ O Creditix usa três branches de longa duração, cada uma mapeada a um ambiente
 | `hmg` | Homologação | Testes de carga, segurança e validação de features antes de produção. |
 | `prod` | Produção | `creditix.metadax.com.br`, disponível para todos os usuários. |
 
-O código só avança `dev → hmg → prod` através de Pull Requests, nunca por push direto. Isso é reforçado
-em dois níveis:
+O código avança `dev → hmg → prod` automaticamente, sempre através de Pull Requests (nunca por push
+direto), com merge automático assim que os checks obrigatórios passarem. Isso é reforçado em três níveis:
 
 1. **Proteção de branch no GitHub** (bloqueia o merge até os checks passarem).
-2. **Workflows de CI** (`.github/workflows/ci.yml` e `security-load-gate.yml`), que são os checks
-   exigidos.
+2. **Workflows de CI** (`ci.yml` e `test-suite.yml`), que são os checks exigidos.
+3. **`promote.yml`**, que abre a PR de promoção e liga auto-merge sozinho — não é preciso clicar em nada
+   no caminho feliz.
 
-## Configurando a proteção de branch (uma vez, manualmente)
+## Promoção automática — como funciona
 
-No GitHub: **Settings → Branches → Add branch protection rule**, para `hmg` e para `prod`:
+1. Você faz merge de uma feature/fix em `dev` normalmente (PR de uma branch de feature).
+2. O workflow **CI** roda em `dev`. Se passar, o workflow **Promover ambiente** dispara automaticamente
+   (`workflow_run` do CI), classifica os commits que estão sendo promovidos como `criticidade:feature` ou
+   `criticidade:hotfix` (ver seção abaixo), abre a PR `dev → hmg` já com a label certa, e liga auto-merge.
+3. O workflow **Test Suite** roda na PR. Quando todos os checks obrigatórios passam (e a branch protection
+   permite), o GitHub mergeia a PR sozinho.
+4. O merge em `hmg` dispara o deploy de `hmg` e, em seguida, o workflow **CI** roda de novo em `hmg` —
+   disparando **Promover ambiente** outra vez, agora para a PR `hmg → prod`, repetindo o ciclo.
+5. Depois de cada merge em `hmg` ou `prod`, o workflow **Verificação pós-deploy** espera o deploy
+   terminar e confirma que o ambiente resultante está de fato no ar e saudável.
+
+Nada disso exige clique manual no caminho feliz — só intervém se algum check falhar.
+
+## Gate de criticidade/urgência (feature vs. hotfix)
+
+Toda promoção é classificada automaticamente pelo `promote.yml`, olhando as mensagens de commit que estão
+sendo promovidos:
+
+- **`criticidade:hotfix`** — só quando **todos** os commits promovidos começam com `fix:` (convenção de
+  commits) ou contêm `[hotfix]`/`[emergencial]` na mensagem. Nesse caso, o workflow **Test Suite** pula os
+  gates lentos e de validação profunda (`escalabilidade`, `eficiencia`, `funcionalidade-e2e`) — só os
+  rápidos e nunca-puláveis continuam obrigatórios: `seguranca` (auditoria de dependências + varredura de
+  segredos) e `cloud` (o ambiente de origem está de fato no ar). A ideia é que uma correção urgente não
+  fique represada esperando um teste de carga de vários minutos, mas nunca pule segurança.
+- **`criticidade:feature`** — qualquer outra combinação (inclusive um único commit de feature misturado com
+  correções). Passa pela suíte completa, incluindo:
+  - `escalabilidade`: teste de carga real (k6) contra o ambiente de origem.
+  - `eficiencia`: Lighthouse contra o ambiente de origem, com piso de pontuação de performance.
+  - `funcionalidade-e2e`: smoke tests Playwright contra o ambiente de origem (login, cadastro, proteção de
+    rota autenticada, cabeçalhos de segurança realmente entregues pelo navegador).
+
+Se quem revisar discordar da classificação automática, pode trocar a label na PR manualmente antes do
+merge — mas isso não reexecuta o Test Suite automaticamente (ver limitação abaixo); force um novo run
+empurrando um commit vazio (`git commit --allow-empty -m "reclassificar" && git push`) se precisar que a
+suíte completa rode de fato.
+
+## Configurando a promoção automática (uma vez, manualmente)
+
+### 1. Crie o secret `PROMOTE_PAT`
+
+O GitHub não dispara outros workflows a partir de um push/PR feito com o `GITHUB_TOKEN` padrão de um
+workflow (proteção contra loops infinitos) — por isso `promote.yml` precisa de um token de verdade para
+que a PR que ele abre e o merge que ele faz disparem o `Test Suite` e o deploy normalmente.
+
+1. Crie um **fine-grained Personal Access Token** em
+   [github.com/settings/tokens?type=beta](https://github.com/settings/tokens?type=beta):
+   - **Repository access**: só `pedrorosemberg/creditix`.
+   - **Permissions**: `Contents` (Read and write), `Pull requests` (Read and write), `Metadata` (Read-only).
+   - Prazo de expiração: defina um lembrete para renovar (ou o mais longo permitido pela sua organização).
+2. **Settings → Secrets and variables → Actions → New repository secret**: nome `PROMOTE_PAT`, valor o
+   token gerado.
+
+### 2. Habilite "Allow auto-merge" no repositório
+
+**Settings → General → Pull Requests → Allow auto-merge**. Sem isso, `gh pr merge --auto` falha
+silenciosamente (a PR fica esperando para sempre).
+
+### 3. Proteção de branch (`hmg` e `prod`)
+
+**Settings → Branches → Add branch protection rule**:
 
 - ✅ Require a pull request before merging
-- ✅ Require status checks to pass before merging
-  - `hmg`: exigir o check `lint-typecheck-test-build` (do workflow `CI`)
-  - `prod`: exigir `lint-typecheck-test-build` **e** `security-scan` (do workflow
-    `Security & Load Gate`) — o job `load-test` fica condicional (só roda se `HMG_BASE_URL` estiver
-    configurado como secret/variável do repositório) e não deveria ser marcado obrigatório até você
-    validar que o k6 real está funcionando no seu ambiente.
+- ✅ Require status checks to pass before merging:
+  - `hmg`: `lint-typecheck-test-build` (workflow **CI**) + `seguranca` + `cloud` (workflow **Test Suite**)
+  - `prod`: os mesmos, mais — depois que você validar `HMG_BASE_URL` funcionando de verdade —
+    `escalabilidade`, `eficiencia` e `funcionalidade-e2e`
 - ✅ Require branches to be up to date before merging
 - ✅ Do not allow bypassing the above settings (inclusive para admins, se possível no seu plano)
 
-Isso garante, na prática, a regra pedida: **só transborda de `dev` para `hmg`, ou de `hmg` para `prod`,
-se todos os testes obrigatórios daquele destino estiverem verdes.**
+### 4. (Opcional, mas recomendado) URLs dos ambientes para os testes contra o ambiente vivo
 
-## Como promover
+Sem essas variáveis, os jobs `cloud`, `escalabilidade`, `eficiencia` e `funcionalidade-e2e` são pulados
+(o workflow avisa e não falha) — a suíte roda só com os gates estáticos (lint, typecheck, testes
+unitários, build, auditoria de dependências, segredos). Configure em **Settings → Secrets and variables →
+Actions → Variables** (não precisam ser secret, são só URLs):
 
-Use o workflow manual **"Promover ambiente"** (aba Actions → Promover ambiente → Run workflow,
-escolhendo `hmg` ou `prod` como destino) para abrir a PR de promoção automaticamente, ou abra a PR
-manualmente (`dev` → `hmg`, depois `hmg` → `prod`).
+- `DEV_BASE_URL`: preview de `dev` (ex.: `https://dev.creditix.metadax.com.br`) — testado antes de
+  promover para `hmg`.
+- `HMG_BASE_URL`: ambiente de homologação (ex.: `https://hmg.creditix.metadax.com.br`) — testado antes de
+  promover para `prod`, e de novo depois do deploy em `hmg` (verificação pós-deploy).
+- `PROD_BASE_URL`: produção (`https://creditix.metadax.com.br`) — usado só pela verificação pós-deploy
+  (depois que o merge em `prod` já aconteceu).
+
+## Promoção manual (se precisar)
+
+Ainda é possível disparar manualmente: aba **Actions → Promover ambiente → Run workflow**, escolhendo
+`hmg` ou `prod` como destino. Útil para promover fora do fluxo normal (ex.: `hmg` recebeu um commit direto
+que precisa ir pra `prod`, ou você quer forçar uma reclassificação).
 
 ## Variáveis por ambiente
 
@@ -60,3 +129,17 @@ um Environment (Preview para `dev`/`hmg`, Production para `prod`) com suas próp
 `prod` deve ser o único ambiente apontado por `creditix.metadax.com.br`. `dev` e `hmg` devem usar
 subdomínios/URLs de preview separados (ex.: `dev.creditix.metadax.com.br`, `hmg.creditix.metadax.com.br`)
 para nunca haver ambiguidade sobre qual ambiente um usuário está acessando.
+
+## Próximos passos (o que a esteira ainda não cobre)
+
+- **Checagem de deploy via API do provedor** (ex.: Vercel): hoje o job `cloud` só confirma que a URL
+  configurada responde 2xx com os cabeçalhos de segurança esperados — não confirma via API que o deploy
+  específico daquele commit terminou com sucesso (exigiria `VERCEL_TOKEN` + IDs de projeto/time como
+  secrets adicionais). A verificação pós-deploy com espera fixa (90s) é uma aproximação razoável, não uma
+  garantia.
+- **Piso de performance do Lighthouse mais exigente**: começou conservador (0.5) por falta de uma série
+  histórica real contra `hmg`/`prod` — suba `LIGHTHOUSE_MIN_PERFORMANCE` depois de observar algumas
+  execuções.
+- **Testes E2E autenticados**: os smoke tests Playwright hoje só cobrem rotas públicas (login, cadastro,
+  redirecionamento) porque não há uma conta de teste dedicada configurada — criar uma e passar as
+  credenciais via secret ampliaria a cobertura para o dashboard, dívidas, etc.

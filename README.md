@@ -54,8 +54,11 @@ Guia completo (nuvem ou self-hosted com Docker) em [`docs/SETUP.md`](./docs/SETU
 ## Ambientes e branches
 
 Este repositório usa três branches de longa duração — `dev` (desenvolvimento) → `hmg` (homologação:
-testes de carga e segurança) → `prod` (`creditix.metadax.com.br`) — com promoção via Pull Request
-bloqueada por checks obrigatórios de CI. Detalhes em [`docs/ENVIRONMENTS.md`](./docs/ENVIRONMENTS.md).
+testes de carga e segurança) → `prod` (`creditix.metadax.com.br`) — com promoção automática via Pull
+Request: uma esteira classifica cada mudança (feature ou hotfix/emergencial), roda a bateria de testes
+correspondente (segurança, cloud, escalabilidade, eficiência, funcionalidade e proteção contra vazamento
+de lógica de negócio) e mergeia sozinha quando tudo passa. Detalhes em
+[`docs/ENVIRONMENTS.md`](./docs/ENVIRONMENTS.md).
 
 ## Checagens locais
 

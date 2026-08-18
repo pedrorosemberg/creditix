@@ -9,7 +9,12 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "verificar:segredo-negocio": "node scripts/verificar-segredo-negocio.mjs",
+    "verificar:orcamento-bundle": "node scripts/verificar-orcamento-bundle.mjs",
+    "verificar:saude-deploy": "node scripts/verificar-saude-deploy.mjs",
+    "verificar:eficiencia": "node scripts/verificar-eficiencia.mjs"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.2.0",
@@ -32,6 +37,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^20",

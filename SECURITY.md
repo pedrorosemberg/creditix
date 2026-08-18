@@ -43,7 +43,12 @@ detalhes e passos de reprodução. Responderemos o mais rápido possível.
   `Authorization: Bearer <CRON_SECRET>`, não sessão de usuário — evite expor esse endpoint sem o segredo.
 - **Sem segredos no repositório:** `.env*` está no `.gitignore` (exceto `.env.example`, que não contém
   valores reais). Segredos de produção/homologação vivem exclusivamente nas variáveis de ambiente do
-  provedor de deploy (Vercel) ou no `docker/.env` local (também ignorado pelo git).
+  provedor de deploy (Vercel) ou no `docker/.env` local (também ignorado pelo git). O gitleaks roda em
+  toda promoção (`.github/workflows/test-suite.yml`) como uma segunda camada.
+- **Lógica de negócio nunca vaza para o bundle do cliente:** `scripts/verificar-segredo-negocio.mjs` roda
+  em toda build de CI e falha se os prompts de guardrail da IA (`src/lib/ai/chat.ts`) ou textos do motor
+  de análise de dívidas aparecerem no JS enviado ao navegador — regressão automática caso algum Client
+  Component passe a importar esses módulos por engano.
 
 ## Autenticação
 

@@ -44,6 +44,16 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: http://localhost:8000
           NEXT_PUBLIC_SUPABASE_ANON_KEY: build-placeholder
 
+      # Gates rápidos e sempre obrigatórios — mesmo em correção emergencial
+      # (ver test-suite.yml para a suíte completa, que pode ser pulada nesse
+      # caso). Um segredo de negócio vazado ou uma regressão grande de
+      # bundle não devem ir pra produção mesmo sob pressa.
+      - name: Verificar vazamento de segredo de negócio no bundle do cliente
+        run: npm run verificar:segredo-negocio
+
+      - name: Verificar orçamento de tamanho do bundle
+        run: npm run verificar:orcamento-bundle
+
       - name: Auditoria de dependências (falhas críticas/altas)
         run: npm audit --audit-level=high
         continue-on-error: true
