@@ -50,7 +50,7 @@ Se você rodar o stack self-hosted (`docker/`), a segurança do ambiente também
 - Mantenha as imagens Docker atualizadas (`docker compose pull`).
 - Faça backup regular do volume `db-data`.
 
-## Análise por IA local embutida (padrão)
+## Análise por IA local embutida (self-hosted — não funciona na Vercel)
 
 O provedor local (padrão quando `AI_PROVIDER` não está definido) roda um
 modelo pequeno (ONNX, via `@huggingface/transformers`) dentro do próprio
@@ -59,9 +59,19 @@ modelo (arquivos públicos, sem nenhuma informação de usuário) são baixados
 uma única vez durante o **build** (`scripts/baixar-modelo-ia.mjs`, hook
 `prebuild`) e ficam junto do próprio deploy — em runtime o provedor lê
 apenas arquivos locais (`env.allowRemoteModels = false`); nenhuma chamada
-de rede acontece ao processar uma análise ou mensagem de chat. Por decisão
-de produto, o Gemini (API do Google) fica desativado por padrão pelo mesmo
-motivo — só é usado se alguém configurar `AI_PROVIDER=gemini` de propósito.
+de rede acontece ao processar uma análise ou mensagem de chat.
+
+**Confirmado em produção que isso NÃO funciona no ambiente serverless da
+Vercel**: o binário nativo do onnxruntime-node falha com
+`libonnxruntime.so.1: cannot open shared object file` — depende de
+bibliotecas do sistema que a Vercel não disponibiliza, mesmo forçando o
+binário a ir junto do deploy. Funciona normalmente em self-hosted (Docker,
+servidor próprio, disco/OS completos). Para deploys na Vercel, use
+`AI_PROVIDER=ollama` com um servidor Ollama próprio — ver
+`docs/OLLAMA_SERVIDOR_GRATUITO.md` para subir um de graça na Oracle Cloud.
+Por decisão de produto, o Gemini (API do Google) fica desativado por
+padrão pelo mesmo motivo de privacidade — só é usado se alguém configurar
+`AI_PROVIDER=gemini` de propósito.
 
 O download desses pesos no build funciona sem nenhum token. Opcionalmente,
 `HF_TOKEN` (gratuito, só leitura, gerado em huggingface.co/settings/tokens)

@@ -65,15 +65,22 @@ antes de abrir uma PR evita ida e volta.
 
 Por padrão (sem `AI_PROVIDER` definido), a análise por IA e o chat rodam com um modelo pequeno embutido
 no próprio processo do servidor (`onnx-community/Qwen2.5-0.5B-Instruct`, via `@huggingface/transformers`)
-— nenhum dado do usuário sai da sua infraestrutura para nenhum serviço de terceiros, nem para a Hugging
-Face: os pesos do modelo são baixados **uma única vez, no build** (`scripts/baixar-modelo-ia.mjs`, hook
-`prebuild`) e ficam junto do próprio deploy; em runtime não há nenhuma chamada de rede.
+— nenhum dado do usuário sai da sua infraestrutura para nenhum serviço de terceiros. Funciona bem em
+self-hosted (Docker, servidor próprio).
 
-Esse download no build funciona sem nenhuma configuração extra. Opcionalmente, defina `HF_TOKEN`
-(gratuito, só leitura — gere em [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens))
-se builds muito frequentes esbarrarem em rate limit anônimo da Hugging Face. Isso não envia nenhum dado
-de usuário para lá — só autentica o download dos pesos (arquivos públicos) durante o build, nunca em
-runtime.
+**Isso não funciona em deploys na Vercel** — confirmado em produção: o ambiente serverless não consegue
+carregar o binário nativo que esse motor precisa (`libonnxruntime.so.1: cannot open shared object file`,
+faltam bibliotecas do sistema que a Vercel não disponibiliza). Para deploys na Vercel, configure
+`AI_PROVIDER=ollama` apontando para um servidor Ollama seu — veja
+[`docs/OLLAMA_SERVIDOR_GRATUITO.md`](./OLLAMA_SERVIDOR_GRATUITO.md) para subir um de graça na Oracle Cloud
+(tier "Always Free", indefinido). Nenhum dado sai da sua infraestrutura de qualquer forma — a diferença é
+só qual servidor seu roda a inferência.
+
+Em self-hosted, o download dos pesos no build funciona sem nenhuma configuração extra. Opcionalmente,
+defina `HF_TOKEN` (gratuito, só leitura — gere em
+[huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)) se builds muito frequentes
+esbarrarem em rate limit anônimo da Hugging Face. Isso não envia nenhum dado de usuário para lá — só
+autentica o download dos pesos (arquivos públicos) durante o build, nunca em runtime.
 
 - Self-hosted com um servidor [Ollama](https://ollama.com) próprio: defina `AI_PROVIDER=ollama` e
   `OLLAMA_HOST`/`OLLAMA_MODEL`.
