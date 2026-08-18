@@ -1,0 +1,6 @@
+# Falsos positivos confirmados: exemplos de "curl -u usuario:senha" na
+# documentação de setup do Ollama, usando uma senha-placeholder óbvia
+# ("escolha-uma-senha-forte") — não são segredos reais. Um fingerprint por
+# linha (commit:arquivo:regra:linha), conforme a saída do próprio gitleaks.
+de6acbf92124d110f6879b056e0260993575b221:docs/OLLAMA_CLOUD_RUN_GRATUITO.md:curl-auth-user:110
+0b100f9a4966d92c4f0dae4883f8b1a92f896468:docs/OLLAMA_SERVIDOR_GRATUITO.md:curl-auth-user:83

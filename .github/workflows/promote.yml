@@ -82,8 +82,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.PROMOTE_PAT }}
         run: |
-          gh label create "criticidade:feature" --color "1D76DB" --description "Passa pela suíte completa de testes" --force
-          gh label create "criticidade:hotfix" --color "D93F0B" --description "Correção/emergência — pula os gates lentos (carga, performance, E2E)" --force
+          if ! gh label create "criticidade:feature" --color "1D76DB" --description "Passa pela suíte completa de testes" --force \
+            || ! gh label create "criticidade:hotfix" --color "D93F0B" --description "Correção/emergência — pula os gates lentos (carga, performance, E2E)" --force; then
+            echo "::error::Não foi possível criar/atualizar as labels — o PROMOTE_PAT provavelmente não tem a permissão 'Issues: Read and write' (o GitHub gerencia labels pela API de Issues, mesmo quando aplicadas numa PR). Veja docs/ENVIRONMENTS.md#1-crie-o-secret-promote_pat."
+            exit 1
+          fi
 
       - name: Criar ou atualizar a Pull Request de promoção
         if: steps.classificacao.outputs.label != ''
@@ -108,8 +111,36 @@ jobs:
           fi
           echo "numero=$NUMERO" >> "$GITHUB_OUTPUT"
 
-      - name: Ligar auto-merge
+      - name: Disparar Test Suite explicitamente
+        # O evento pull_request do GitHub às vezes não dispara quando a PR é
+        # aberta pra um branch cujo commit já existia antes (o GitHub
+        # reaproveita o check suite criado pelo push anterior e nunca chega
+        # a reavaliar o gatilho pull_request contra ele) — confirmado na
+        # prática na primeira execução real desta esteira. Disparar aqui
+        # explicitamente garante que os checks obrigatórios (seguranca,
+        # cloud, ...) sempre rodem, independentemente desse comportamento.
         if: steps.classificacao.outputs.label != ''
         env:
           GH_TOKEN: ${{ secrets.PROMOTE_PAT }}
-        run: gh pr merge "${{ steps.pr.outputs.numero }}" --auto --squash
+          ORIGEM: ${{ steps.branches.outputs.origem }}
+          DESTINO: ${{ steps.branches.outputs.destino }}
+          LABEL: ${{ steps.classificacao.outputs.label }}
+        run: |
+          URGENTE="false"
+          [ "$LABEL" = "criticidade:hotfix" ] && URGENTE="true"
+          gh workflow run test-suite.yml --ref "$ORIGEM" -f destino="$DESTINO" -f urgente="$URGENTE"
+
+      - name: Ligar auto-merge
+        # --merge, não --squash: dev/hmg/prod são branches de longa duração
+        # que se mergeiam repetidamente entre si — squash quebra a
+        # ancestralidade compartilhada entre elas (o commit squashado no
+        # destino nunca é ancestral dos commits individuais que continuam
+        # na origem), e a PRÓXIMA promoção do mesmo arquivo aparece como
+        # conflito mesmo sem mudança conceitual nenhuma — confirmado na
+        # prática (PR #5 ficou "dirty"/com conflito só por causa disso).
+        # Squash continua correto para branches de feature que morrem após
+        # o merge — não é o caso aqui.
+        if: steps.classificacao.outputs.label != ''
+        env:
+          GH_TOKEN: ${{ secrets.PROMOTE_PAT }}
+        run: gh pr merge "${{ steps.pr.outputs.numero }}" --auto --merge

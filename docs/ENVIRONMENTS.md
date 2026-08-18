@@ -61,6 +61,12 @@ suíte completa rode de fato.
 
 ## Configurando a promoção automática (uma vez, manualmente)
 
+**Status atual desta instância:** `PROMOTE_PAT` (com as permissões corretas, incluindo `Issues`),
+`DEV_BASE_URL`, `HMG_BASE_URL`, `PROD_BASE_URL` e "Allow auto-merge" já estão configurados — a promoção
+dev→hmg→prod roda de ponta a ponta sem intervenção manual. `NEXT_PUBLIC_GRAFANA_FARO_URL`
+(observabilidade opcional, ver `docs/OBSERVABILIDADE.md`) ainda não foi configurada — sem ela, o app
+funciona normalmente, só sem o Grafana Faro.
+
 ### 1. Crie o secret `PROMOTE_PAT`
 
 O GitHub não dispara outros workflows a partir de um push/PR feito com o `GITHUB_TOKEN` padrão de um
@@ -70,15 +76,23 @@ que a PR que ele abre e o merge que ele faz disparem o `Test Suite` e o deploy n
 1. Crie um **fine-grained Personal Access Token** em
    [github.com/settings/tokens?type=beta](https://github.com/settings/tokens?type=beta):
    - **Repository access**: só `pedrorosemberg/creditix`.
-   - **Permissions**: `Contents` (Read and write), `Pull requests` (Read and write), `Metadata` (Read-only).
+   - **Permissions**: `Contents` (Read and write), `Pull requests` (Read and write), `Issues` (Read and
+     write — **necessário mesmo só usando PRs**: o GitHub gerencia labels pela API de Issues, não de Pull
+     Requests, mesmo quando o label é aplicado numa PR; sem essa permissão, `gh label create`/`gh pr edit
+     --add-label` falham com "HTTP 403: Resource not accessible by personal access token" — confirmado na
+     primeira execução real da esteira), `Metadata` (Read-only).
    - Prazo de expiração: defina um lembrete para renovar (ou o mais longo permitido pela sua organização).
 2. **Settings → Secrets and variables → Actions → New repository secret**: nome `PROMOTE_PAT`, valor o
    token gerado.
 
 ### 2. Habilite "Allow auto-merge" no repositório
 
-**Settings → General → Pull Requests → Allow auto-merge**. Sem isso, `gh pr merge --auto` falha
-silenciosamente (a PR fica esperando para sempre).
+**Settings → General → Pull Requests → Allow auto-merge**. Sem isso, `gh pr merge --auto` falha com
+`GraphQL: Auto merge is not allowed for this repository` (confirmado na primeira execução real).
+
+**Importante:** essa opção sozinha não basta — o GitHub também exige que a branch de destino tenha
+proteção de branch com status checks obrigatórios configurados (passo 3 abaixo) antes de aceitar
+auto-merge. Configure os dois na ordem: primeiro a proteção de branch, depois "Allow auto-merge".
 
 ### 3. Proteção de branch (`hmg` e `prod`)
 
@@ -142,9 +156,19 @@ para nunca haver ambiguidade sobre qual ambiente um usuário está acessando.
   específico daquele commit terminou com sucesso (exigiria `VERCEL_TOKEN` + IDs de projeto/time como
   secrets adicionais). A verificação pós-deploy com espera fixa (90s) é uma aproximação razoável, não uma
   garantia.
-- **Piso de performance do Lighthouse mais exigente**: começou conservador (0.5) por falta de uma série
-  histórica real contra `hmg`/`prod` — suba `LIGHTHOUSE_MIN_PERFORMANCE` depois de observar algumas
-  execuções.
+- **Piso de performance do Lighthouse**: calibrado em 0.3 a partir da primeira execução real (0.39 contra
+  `creditix-dev.metadax.com.br`) — suba `LIGHTHOUSE_MIN_PERFORMANCE` conforme mais execuções acumularem
+  histórico.
 - **Testes E2E autenticados**: os smoke tests Playwright hoje só cobrem rotas públicas (login, cadastro,
   redirecionamento) porque não há uma conta de teste dedicada configurada — criar uma e passar as
   credenciais via secret ampliaria a cobertura para o dashboard, dívidas, etc.
+- **Cloudflare interfere com o smoke E2E (Playwright)**: `DEV_BASE_URL`/`HMG_BASE_URL`, se apontarem para
+  um subdomínio atrás do Cloudflare (ex.: `creditix-dev.metadax.com.br`), têm o Rocket Loader/proteção
+  contra bots do Cloudflare reescrevendo e adiando os `<script>` da página — confirmado na primeira
+  execução real: o HTML bruto (via `curl`/fetch simples) tem o formulário de login perfeitamente correto,
+  mas o Chromium headless do Playwright não encontra os campos a tempo. Não é um bug do app. Duas saídas:
+  (a) aponte `DEV_BASE_URL`/`HMG_BASE_URL` para o alias `*.vercel.app` do mesmo deploy (não passa pelo
+  Cloudflare) só para esses checks automatizados, mantendo o domínio custom pra uso humano normal; ou
+  (b) ajuste as regras do Cloudflare (Rocket Loader / Bot Fight Mode) pra não interferir no user-agent do
+  GitHub Actions runner. Nenhuma das duas foi feita ainda — o job `funcionalidade-e2e` (e `eficiencia`,
+  que também depende de JS carregando corretamente) não são status checks obrigatórios ainda por isso.
