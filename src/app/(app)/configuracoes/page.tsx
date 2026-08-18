@@ -4,6 +4,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { Field, Input } from "@/components/ui/input";
 import { atualizarPerfilAction } from "./actions";
 import { PerfilForms } from "./perfil-forms";
+import { ReverTourButton } from "@/components/onboarding/rever-tour-button";
 
 export default async function ConfiguracoesPage() {
   const supabase = await createClient();
@@ -55,6 +56,14 @@ export default async function ConfiguracoesPage() {
           Seus dados financeiros são isolados por usuário (Row Level Security) e nunca compartilhados com
           outros usuários da plataforma. Análises por IA são processadas inteiramente no servidor.
         </p>
+      </Card>
+
+      <Card className="border-border">
+        <CardTitle>Ajuda</CardTitle>
+        <p className="mt-2 mb-4 text-sm text-foreground-muted">
+          Rode novamente o passo a passo guiado que aparece no primeiro acesso.
+        </p>
+        <ReverTourButton />
       </Card>
     </div>
   );

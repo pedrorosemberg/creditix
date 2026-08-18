@@ -1,10 +1,23 @@
 name: Promover ambiente
 
-# Disparo manual para abrir a PR de promoção (dev -> hmg ou hmg -> prod).
-# A PR só pode ser mergeada depois que os checks obrigatórios da branch de
-# destino passarem (CI sempre; Security & Load Gate também para prod) —
-# isso é reforçado pela proteção de branch configurada no GitHub, não por
-# este workflow. Veja docs/ENVIRONMENTS.md.
+# Abre (ou atualiza) automaticamente a PR de promoção dev->hmg ou hmg->prod,
+# classifica a urgência (hotfix/emergencial vs. feature normal) pelos
+# commits que estão sendo promovidos, e liga auto-merge — a PR mergeia
+# sozinha assim que os checks obrigatórios da branch de destino (workflows
+# CI e Test Suite) passarem.
+#
+# Disparado automaticamente pelo último step de ci.yml quando o CI passa em
+# dev ou hmg (via "gh workflow run", não por um evento push/pull_request —
+# só assim o GITHUB_TOKEN de lá pode acionar este workflow). Também pode
+# ser disparado manualmente (aba Actions -> Promover ambiente -> Run
+# workflow).
+#
+# Requer o secret PROMOTE_PAT (um Personal Access Token, não o GITHUB_TOKEN
+# padrão) para criar a PR e fazer o merge, porque o GitHub não dispara
+# outros workflows a partir de eventos (push/pull_request) causados pelo
+# próprio GITHUB_TOKEN — sem isso, a PR seria criada mas o Test Suite nunca
+# rodaria automaticamente. Ver docs/ENVIRONMENTS.md para o passo a passo de
+# criação do token.
 
 on:
   workflow_dispatch:
@@ -18,30 +31,85 @@ on:
 jobs:
   abrir-pr:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verificar que o PROMOTE_PAT está configurado
+        env:
+          PROMOTE_PAT: ${{ secrets.PROMOTE_PAT }}
+        run: |
+          if [ -z "$PROMOTE_PAT" ]; then
+            echo "::error::Secret PROMOTE_PAT não configurado — a PR não pode ser criada de um jeito que dispare o Test Suite automaticamente. Veja docs/ENVIRONMENTS.md#promoção-automática."
+            exit 1
+          fi
 
       - name: Definir origem/destino
         id: branches
-        run: |
-          if [ "${{ inputs.destino }}" = "hmg" ]; then
-            echo "origem=dev" >> "$GITHUB_OUTPUT"
-          else
-            echo "origem=hmg" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Criar Pull Request de promoção
         env:
-          GH_TOKEN: ${{ github.token }}
-          ORIGEM: ${{ steps.branches.outputs.origem }}
           DESTINO: ${{ inputs.destino }}
         run: |
-          gh pr create \
-            --head "$ORIGEM" \
-            --base "$DESTINO" \
-            --title "Promover $ORIGEM → $DESTINO" \
-            --body "PR automática de promoção de \`$ORIGEM\` para \`$DESTINO\`. Só deve ser mergeada depois que todos os checks obrigatórios passarem." \
-            || echo "Já existe uma PR aberta de $ORIGEM para $DESTINO."
+          if [ "$DESTINO" = "hmg" ]; then ORIGEM="dev"; else ORIGEM="hmg"; fi
+          echo "origem=$ORIGEM" >> "$GITHUB_OUTPUT"
+          echo "destino=$DESTINO" >> "$GITHUB_OUTPUT"
+
+      - name: Classificar urgência (hotfix/emergencial vs. feature)
+        id: classificacao
+        env:
+          ORIGEM: ${{ steps.branches.outputs.origem }}
+          DESTINO: ${{ steps.branches.outputs.destino }}
+        run: |
+          git fetch origin "$ORIGEM" "$DESTINO"
+          MENSAGENS=$(git log "origin/$DESTINO..origin/$ORIGEM" --format=%s)
+          if [ -z "$MENSAGENS" ]; then
+            echo "label=" >> "$GITHUB_OUTPUT"
+            echo "Nada novo para promover de $ORIGEM para $DESTINO."
+            exit 0
+          fi
+          # Hotfix só quando TODOS os commits sendo promovidos são correção —
+          # basta uma linha de feature no meio pra exigir a suíte completa.
+          if echo "$MENSAGENS" | grep -qvi '^fix\|\[hotfix\]\|\[emergencial\]'; then
+            echo "label=criticidade:feature" >> "$GITHUB_OUTPUT"
+          else
+            echo "label=criticidade:hotfix" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Commits sendo promovidos:"
+          echo "$MENSAGENS"
+
+      - name: Criar labels de criticidade (se não existirem)
+        if: steps.classificacao.outputs.label != ''
+        env:
+          GH_TOKEN: ${{ secrets.PROMOTE_PAT }}
+        run: |
+          gh label create "criticidade:feature" --color "1D76DB" --description "Passa pela suíte completa de testes" --force
+          gh label create "criticidade:hotfix" --color "D93F0B" --description "Correção/emergência — pula os gates lentos (carga, performance, E2E)" --force
+
+      - name: Criar ou atualizar a Pull Request de promoção
+        if: steps.classificacao.outputs.label != ''
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.PROMOTE_PAT }}
+          ORIGEM: ${{ steps.branches.outputs.origem }}
+          DESTINO: ${{ steps.branches.outputs.destino }}
+          LABEL: ${{ steps.classificacao.outputs.label }}
+        run: |
+          NUMERO=$(gh pr list --head "$ORIGEM" --base "$DESTINO" --state open --json number --jq '.[0].number')
+          if [ -z "$NUMERO" ]; then
+            gh pr create \
+              --head "$ORIGEM" \
+              --base "$DESTINO" \
+              --title "Promover $ORIGEM → $DESTINO" \
+              --body "PR automática de promoção de \`$ORIGEM\` para \`$DESTINO\`. Classificada como \`$LABEL\`. Mergeia automaticamente quando os checks obrigatórios passarem (ver docs/ENVIRONMENTS.md)." \
+              --label "$LABEL"
+            NUMERO=$(gh pr list --head "$ORIGEM" --base "$DESTINO" --state open --json number --jq '.[0].number')
+          else
+            gh pr edit "$NUMERO" --add-label "$LABEL"
+          fi
+          echo "numero=$NUMERO" >> "$GITHUB_OUTPUT"
+
+      - name: Ligar auto-merge
+        if: steps.classificacao.outputs.label != ''
+        env:
+          GH_TOKEN: ${{ secrets.PROMOTE_PAT }}
+        run: gh pr merge "${{ steps.pr.outputs.numero }}" --auto --squash

@@ -30,13 +30,29 @@ abusivos — com base em legislação e jurisprudência brasileiras vigentes. Um
   opcional e desligado por padrão — ver [`SECURITY.md`](./SECURITY.md)).
 - **Programa de indicação** (`/convite`): link pessoal, com contagem de convites pendentes, aceitos e de
   quantos indicados já quitaram alguma dívida — sem nunca expor os dados financeiros de quem foi indicado.
+- **Tour de boas-vindas** guiado (driver.js) no primeiro acesso, com botão pra rever em Configurações a
+  qualquer momento.
+- **Perguntas frequentes** (`/faq`) e contato direto com a equipe.
+
+## Como participar
+
+1. Crie sua conta em `/cadastro` (ou peça um link de indicação a alguém que já use o Creditix, em
+   `/convite`).
+2. Cadastre suas dívidas, renda e gastos essenciais — o painel e o plano de recuperação são montados
+   automaticamente a partir disso.
+3. Dúvidas comuns (segurança, IA, senha, indicação) estão em [`/faq`](https://creditix.metadax.com.br/faq);
+   o que não estiver lá, é só escrever para **contato@metadax.com.br**.
+4. Quer contribuir com código? O projeto é código aberto (MIT) — veja a seção "Stack" abaixo e
+   [`AGENTS.md`](./AGENTS.md) antes de abrir uma PR.
 
 ## Stack
 
 Next.js 16 (App Router) · Supabase (self-hosted ou Cloud) · Tailwind v4 · Resend · Ollama/Gemini ·
-Upstash Redis (rate limit, opcional) · TypeScript · Vitest. Detalhes em
+Upstash Redis (rate limit, opcional) · Vercel Analytics · Grafana Cloud (observabilidade, opcional) ·
+driver.js (onboarding) · TypeScript · Vitest · Playwright. Detalhes em
 [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md); autenticação especificamente em
-[`docs/AUTENTICACAO.md`](./docs/AUTENTICACAO.md).
+[`docs/AUTENTICACAO.md`](./docs/AUTENTICACAO.md); observabilidade em
+[`docs/OBSERVABILIDADE.md`](./docs/OBSERVABILIDADE.md).
 
 Este repositório também tem um [`AGENTS.md`](./AGENTS.md) (lido automaticamente por agentes de IA/Claude
 Code) com convenções específicas do projeto — vale ler antes de propor uma mudança grande.
@@ -54,8 +70,11 @@ Guia completo (nuvem ou self-hosted com Docker) em [`docs/SETUP.md`](./docs/SETU
 ## Ambientes e branches
 
 Este repositório usa três branches de longa duração — `dev` (desenvolvimento) → `hmg` (homologação:
-testes de carga e segurança) → `prod` (`creditix.metadax.com.br`) — com promoção via Pull Request
-bloqueada por checks obrigatórios de CI. Detalhes em [`docs/ENVIRONMENTS.md`](./docs/ENVIRONMENTS.md).
+testes de carga e segurança) → `prod` (`creditix.metadax.com.br`) — com promoção automática via Pull
+Request: uma esteira classifica cada mudança (feature ou hotfix/emergencial), roda a bateria de testes
+correspondente (segurança, cloud, escalabilidade, eficiência, funcionalidade e proteção contra vazamento
+de lógica de negócio) e mergeia sozinha quando tudo passa. Detalhes em
+[`docs/ENVIRONMENTS.md`](./docs/ENVIRONMENTS.md).
 
 ## Checagens locais
 
@@ -76,4 +95,5 @@ jurídico individualizado** por advogado(a) ou pela Defensoria Pública.
 
 MIT — veja [`LICENSE`](./LICENSE). Dentro do próprio app: `/licenca` explica em português o que é
 permitido, o que não é (uso de marca), e as variáveis pra self-host; `/privacidade` documenta como os
-dados são tratados e lista os subcontratados usados (Vercel, Supabase, Resend, Google Cloud Platform).
+dados são tratados e lista os subcontratados usados (Vercel, Supabase, Resend, Google Cloud Platform,
+Vercel Analytics, Grafana Cloud); `/faq` responde as dúvidas mais comuns.

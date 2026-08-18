@@ -31,6 +31,18 @@ const SUBCONTRATADOS = [
       "infraestrutura (Cloud Run) que hospeda o servidor Ollama usado para a análise por IA — o modelo roda em container próprio, dentro dessa infraestrutura, e nenhum dado é enviado a uma API de terceiros de IA.",
     url: "https://cloud.google.com/terms/cloud-privacy-notice",
   },
+  {
+    nome: "Vercel Analytics",
+    papel:
+      "métricas agregadas de visitas e navegação (páginas mais acessadas, origem de tráfego) — não identifica você individualmente.",
+    url: "https://vercel.com/legal/privacy-policy",
+  },
+  {
+    nome: "Grafana Cloud",
+    papel:
+      "observabilidade de produto (erros e performance agregados) para o time interno — opcional, sem session replay e sem enviar e-mail, nome ou qualquer dado financeiro.",
+    url: "https://grafana.com/legal/privacy-policy/",
+  },
 ];
 
 export default function PrivacidadePage() {
@@ -69,6 +81,11 @@ export default function PrivacidadePage() {
               <li>
                 Você pode excluir sua conta e todos os seus dados a qualquer momento em Configurações; dívidas,
                 transações e análises são removidas em cascata.
+              </li>
+              <li>
+                Usamos analytics e observabilidade de produto (Vercel Analytics e, opcionalmente, Grafana
+                Cloud) só para métricas agregadas de uso, performance e erros — nunca para ver dívidas,
+                valores, e-mail ou qualquer outro dado financeiro seu.
               </li>
             </ul>
           </section>
