@@ -11,5 +11,11 @@
 # usuário/senha, e as duas coisas não convivem no mesmo header
 # Authorization.
 :{$PORT} {
-	reverse_proxy 127.0.0.1:11434
+	# O Ollama recusa (403) qualquer requisição cujo cabeçalho Host não seja
+	# localhost/127.0.0.1 — proteção própria dele contra DNS rebinding. O
+	# Caddy por padrão repassa o Host original do cliente (o domínio
+	# ...run.app), então precisa reescrever aqui antes de encaminhar.
+	reverse_proxy 127.0.0.1:11434 {
+		header_up Host localhost
+	}
 }
