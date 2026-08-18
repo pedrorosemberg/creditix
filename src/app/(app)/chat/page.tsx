@@ -6,6 +6,11 @@ import { cn } from "@/lib/utils";
 import { ChatForm } from "./chat-form";
 import { limparConversaAction } from "./actions";
 
+// O provedor de IA padrão (modelo local embutido, sem chave necessária)
+// pode levar bem mais que o timeout default em cold start — dá mais tempo
+// à Server Action de envio de mensagem antes da função ser encerrada.
+export const maxDuration = 60;
+
 export default async function ChatPage() {
   const supabase = await createClient();
   const {

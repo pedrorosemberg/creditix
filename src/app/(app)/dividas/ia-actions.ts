@@ -40,10 +40,11 @@ export async function gerarAnaliseIaAction(
       structured: null,
     });
     if (error) throw error;
-  } catch {
+  } catch (err) {
+    console.error("[ia-actions] Falha ao gerar análise por IA:", err);
     return {
       error:
-        "Não foi possível gerar a análise por IA agora. Verifique se o provedor configurado (Ollama/Gemini) está disponível.",
+        "Não foi possível gerar a análise por IA agora. Verifique se o provedor configurado (Ollama/Gemini/local) está disponível.",
     };
   }
 

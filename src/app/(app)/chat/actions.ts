@@ -112,7 +112,8 @@ export async function enviarMensagemChatAction(_prev: ChatState, formData: FormD
     if (insertAssistenteError) {
       return { error: "Resposta gerada, mas não foi possível salvá-la." };
     }
-  } catch {
+  } catch (err) {
+    console.error("[chat] Falha ao gerar resposta da IA:", err);
     return {
       error: "O assistente de IA está indisponível no momento. Sua mensagem foi salva — tente novamente em instantes.",
     };
