@@ -11,6 +11,7 @@ import {
   Bell,
   Settings,
   MessageCircle,
+  ScrollText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +23,7 @@ const ITEMS = [
   { href: "/recuperacao", label: "Recuperação financeira", icon: LifeBuoy },
   { href: "/chat", label: "Chat com IA", icon: MessageCircle },
   { href: "/lembretes", label: "Lembretes", icon: Bell },
+  { href: "/logs", label: "Logs", icon: ScrollText },
   { href: "/configuracoes", label: "Configurações", icon: Settings },
 ];
 

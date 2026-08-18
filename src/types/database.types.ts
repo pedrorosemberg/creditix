@@ -22,6 +22,7 @@ export type StatusPlanoDb = "simulado" | "proposto" | "aceito" | "recusado";
 export type ProvedorIaDb = "ollama" | "gemini" | "local";
 export type FrequenciaLembreteDb = "semanal" | "quinzenal" | "mensal";
 export type PapelMensagemChatDb = "usuario" | "assistente";
+export type TipoLogDb = "conta" | "erro";
 
 export type Profile = {
   id: string;
@@ -163,6 +164,15 @@ export type AiChatMessage = {
   created_at: string;
 };
 
+export type ActivityLog = {
+  id: string;
+  user_id: string;
+  tipo: TipoLogDb;
+  titulo: string;
+  descricao: string | null;
+  created_at: string;
+};
+
 type TableDef<Row, Insert, Update = Partial<Insert>> = {
   Row: Row;
   Insert: Insert;
@@ -213,6 +223,10 @@ export type Database = {
       ai_chat_messages: TableDef<
         AiChatMessage,
         Omit<AiChatMessage, "id" | "created_at"> & { id?: string }
+      >;
+      activity_logs: TableDef<
+        ActivityLog,
+        Omit<ActivityLog, "id" | "created_at"> & { id?: string }
       >;
     };
     Views: Record<string, never>;

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { Select } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { formatarMoeda } from "@/lib/utils";
@@ -213,9 +214,9 @@ export default async function RecuperacaoPage({
 
           <form action={salvarPlanoAction}>
             <input type="hidden" name="estrategia" value={estrategia} />
-            <Button type="submit" variant="secondary">
+            <SubmitButton variant="secondary" pendingText="Salvando...">
               Salvar este plano no histórico
-            </Button>
+            </SubmitButton>
           </form>
         </>
       )}

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { DebtForm } from "@/components/dividas/debt-form";
 import { atualizarDividaAction, excluirDividaAction } from "../../actions";
 
@@ -27,9 +27,9 @@ export default async function EditarDividaPage({ params }: { params: Promise<{ i
         </p>
         <form action={excluirDividaAction}>
           <input type="hidden" name="id" value={divida.id} />
-          <Button type="submit" variant="danger">
+          <SubmitButton variant="danger" pendingText="Excluindo...">
             Excluir dívida
-          </Button>
+          </SubmitButton>
         </form>
       </Card>
     </div>

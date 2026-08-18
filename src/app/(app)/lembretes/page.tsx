@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { Field, Input, Label, Select } from "@/components/ui/input";
 import { formatarMoeda } from "@/lib/utils";
 import { obterItensLembrete } from "@/lib/email/lembrete-mensal";
@@ -117,9 +117,9 @@ export default async function LembretesPage() {
             </Field>
           </div>
 
-          <Button type="submit" size="sm">
+          <SubmitButton size="sm" pendingText="Salvando...">
             Salvar
-          </Button>
+          </SubmitButton>
         </form>
       </Card>
 

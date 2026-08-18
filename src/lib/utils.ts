@@ -21,3 +21,10 @@ export function formatarData(data: string | Date | null | undefined): string {
   if (Number.isNaN(d.getTime())) return "—";
   return d.toLocaleDateString("pt-BR", { timeZone: "UTC" });
 }
+
+export function formatarDataHora(data: string | Date | null | undefined): string {
+  if (!data) return "—";
+  const d = typeof data === "string" ? new Date(data) : data;
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+}

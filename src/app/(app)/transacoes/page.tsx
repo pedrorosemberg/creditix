@@ -1,7 +1,7 @@
-import { Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { DeleteIconButton } from "@/components/ui/delete-icon-button";
 import { Field, Input, Label, Select } from "@/components/ui/input";
 import { formatarData, formatarMoeda } from "@/lib/utils";
 import { criarTransacaoAction, excluirTransacaoAction } from "./actions";
@@ -66,9 +66,9 @@ export default async function TransacoesPage() {
             </Label>
           </div>
           <div className="col-span-2 flex items-end md:col-span-4">
-            <Button type="submit" size="sm">
+            <SubmitButton size="sm" pendingText="Adicionando...">
               Adicionar transação
-            </Button>
+            </SubmitButton>
           </div>
         </form>
       </Card>
@@ -101,9 +101,7 @@ export default async function TransacoesPage() {
                 <td className="px-4 py-3 text-right">
                   <form action={excluirTransacaoAction}>
                     <input type="hidden" name="id" value={t.id} />
-                    <button type="submit" className="text-foreground-muted hover:text-danger">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <DeleteIconButton title="Excluir transação" />
                   </form>
                 </td>
               </tr>

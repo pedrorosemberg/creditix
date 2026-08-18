@@ -9,6 +9,7 @@ import { gerarLinksTrocaEmail } from "@/lib/supabase/auth-links";
 import { checarLimite } from "@/lib/security/rate-limit";
 import { getResendClient, REMETENTE_PADRAO } from "@/lib/email/resend";
 import { emailConfirmarEmailAtual, emailConfirmarEmailNovo } from "@/lib/email/auth-emails";
+import { registrarLog } from "@/lib/activity-log";
 
 export type PerfilState = { error?: string; success?: string } | undefined;
 
@@ -62,6 +63,8 @@ export async function atualizarPerfilAction(formData: FormData) {
     .eq("id", user.id);
   if (error) throw new Error("Não foi possível salvar o perfil.");
 
+  await registrarLog(supabase, user.id, { tipo: "conta", titulo: "Perfil atualizado" });
+
   revalidatePath("/configuracoes");
   revalidatePath("/lembretes");
 }
@@ -90,6 +93,11 @@ export async function atualizarAvatarAction(_prev: PerfilState, formData: FormDa
     .from("avatars")
     .upload(caminho, arquivo, { upsert: true, contentType: arquivo.type });
   if (uploadError) {
+    await registrarLog(supabase, user.id, {
+      tipo: "erro",
+      titulo: "Falha ao enviar foto de perfil",
+      descricao: uploadError.message,
+    });
     return { error: "Não foi possível enviar a imagem. Tente novamente." };
   }
 
@@ -98,8 +106,15 @@ export async function atualizarAvatarAction(_prev: PerfilState, formData: FormDa
     .update({ avatar_url: caminho })
     .eq("id", user.id);
   if (updateError) {
+    await registrarLog(supabase, user.id, {
+      tipo: "erro",
+      titulo: "Falha ao salvar foto de perfil no cadastro",
+      descricao: updateError.message,
+    });
     return { error: "Imagem enviada, mas não foi possível salvar no perfil." };
   }
+
+  await registrarLog(supabase, user.id, { tipo: "conta", titulo: "Foto de perfil atualizada" });
 
   for (const caminhoRevalidar of CAMINHOS_PARA_REVALIDAR) revalidatePath(caminhoRevalidar);
   return { success: "Foto de perfil atualizada." };
@@ -136,9 +151,20 @@ export async function atualizarEmailAction(_prev: PerfilState, formData: FormDat
       enviarEmail(user.email, emailConfirmarEmailAtual(linkParaEmailAtual, parsed.data)),
       enviarEmail(parsed.data, emailConfirmarEmailNovo(linkParaEmailNovo)),
     ]);
-  } catch {
+  } catch (err) {
+    await registrarLog(supabase, user.id, {
+      tipo: "erro",
+      titulo: "Falha ao iniciar troca de e-mail",
+      descricao: err instanceof Error ? err.message : String(err),
+    });
     return { error: "Não foi possível iniciar a troca de e-mail. Tente novamente." };
   }
+
+  await registrarLog(supabase, user.id, {
+    tipo: "conta",
+    titulo: "Troca de e-mail solicitada",
+    descricao: `Novo e-mail: ${parsed.data}`,
+  });
 
   return {
     success:
@@ -181,8 +207,14 @@ export async function atualizarSenhaAction(_prev: PerfilState, formData: FormDat
 
   const { error } = await supabase.auth.updateUser({ password: parsed.data.senha_nova });
   if (error) {
+    await registrarLog(supabase, user.id, {
+      tipo: "erro",
+      titulo: "Falha ao atualizar senha",
+      descricao: error.message,
+    });
     return { error: "Não foi possível atualizar a senha. Tente novamente." };
   }
 
+  await registrarLog(supabase, user.id, { tipo: "conta", titulo: "Senha atualizada" });
   return { success: "Senha atualizada com sucesso." };
 }

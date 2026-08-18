@@ -1,7 +1,7 @@
-import { Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { DeleteIconButton } from "@/components/ui/delete-icon-button";
 import { Field, Input, Label, Select } from "@/components/ui/input";
 import { formatarMoeda } from "@/lib/utils";
 import {
@@ -57,9 +57,7 @@ export default async function OrcamentoPage() {
                   <span className="font-medium">{formatarMoeda(Number(i.valor))}</span>
                   <form action={excluirRendaAction}>
                     <input type="hidden" name="id" value={i.id} />
-                    <button type="submit" className="text-foreground-muted hover:text-danger">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <DeleteIconButton title="Excluir renda" />
                   </form>
                 </div>
               </li>
@@ -80,9 +78,9 @@ export default async function OrcamentoPage() {
               </Select>
             </div>
             <div className="col-span-2">
-              <Button type="submit" size="sm">
+              <SubmitButton size="sm" pendingText="Adicionando...">
                 Adicionar renda
-              </Button>
+              </SubmitButton>
             </div>
           </form>
         </Card>
@@ -102,9 +100,7 @@ export default async function OrcamentoPage() {
                   <span className="font-medium">{formatarMoeda(Number(e.valor))}</span>
                   <form action={excluirGastoAction}>
                     <input type="hidden" name="id" value={e.id} />
-                    <button type="submit" className="text-foreground-muted hover:text-danger">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <DeleteIconButton title="Excluir gasto" />
                   </form>
                 </div>
               </li>
@@ -130,9 +126,9 @@ export default async function OrcamentoPage() {
               </Label>
             </div>
             <div className="col-span-2">
-              <Button type="submit" size="sm">
+              <SubmitButton size="sm" pendingText="Adicionando...">
                 Adicionar gasto
-              </Button>
+              </SubmitButton>
             </div>
           </form>
         </Card>

@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { Field, Input } from "@/components/ui/input";
 import { atualizarPerfilAction } from "./actions";
 import { PerfilForms } from "./perfil-forms";
@@ -42,7 +42,7 @@ export default async function ConfiguracoesPage() {
           <input type="hidden" name="lembrete_email" value={profile?.lembrete_email ? "on" : ""} />
           <input type="hidden" name="lembrete_dia_mes" value={profile?.lembrete_dia_mes ?? 5} />
           <div className="md:col-span-2">
-            <Button type="submit">Salvar</Button>
+            <SubmitButton pendingText="Salvando...">Salvar</SubmitButton>
           </div>
         </form>
       </Card>

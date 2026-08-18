@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { Field, Input, Label, Select, Textarea } from "@/components/ui/input";
 import type { Debt } from "@/types/database.types";
 
@@ -119,7 +119,9 @@ export function DebtForm({
         </Field>
       </div>
       <div className="md:col-span-2">
-        <Button type="submit">{divida?.id ? "Salvar alterações" : "Cadastrar dívida"}</Button>
+        <SubmitButton pendingText="Salvando...">
+          {divida?.id ? "Salvar alterações" : "Cadastrar dívida"}
+        </SubmitButton>
       </div>
     </form>
   );

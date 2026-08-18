@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { analisarDividaComIa } from "@/lib/ai/analyze-debt";
 import { checarLimite } from "@/lib/security/rate-limit";
 import { uuidSchema } from "@/lib/security/validation";
+import { registrarLog } from "@/lib/activity-log";
 
 export type AnaliseIaState = { error?: string } | undefined;
 
@@ -42,6 +43,11 @@ export async function gerarAnaliseIaAction(
     if (error) throw error;
   } catch (err) {
     console.error("[ia-actions] Falha ao gerar análise por IA:", err);
+    await registrarLog(supabase, user.id, {
+      tipo: "erro",
+      titulo: `Falha ao gerar análise por IA (dívida: ${divida.credor_nome})`,
+      descricao: err instanceof Error ? err.message : String(err),
+    });
     return {
       error:
         "Não foi possível gerar a análise por IA agora. Verifique se o provedor configurado (Ollama/Gemini/local) está disponível.",

@@ -8,6 +8,7 @@ import { montarPromptChat, type ContextoFinanceiroChat, type MensagemHistorico }
 import { montarPlanoRecuperacao } from "@/lib/finance/recovery-plan";
 import { analisarDivida } from "@/lib/legal/analisar-divida";
 import { checarLimite } from "@/lib/security/rate-limit";
+import { registrarLog } from "@/lib/activity-log";
 
 export type ChatState = { error?: string } | undefined;
 
@@ -114,6 +115,11 @@ export async function enviarMensagemChatAction(_prev: ChatState, formData: FormD
     }
   } catch (err) {
     console.error("[chat] Falha ao gerar resposta da IA:", err);
+    await registrarLog(supabase, user.id, {
+      tipo: "erro",
+      titulo: "Falha ao gerar resposta do chat de IA",
+      descricao: err instanceof Error ? err.message : String(err),
+    });
     return {
       error: "O assistente de IA está indisponível no momento. Sua mensagem foi salva — tente novamente em instantes.",
     };
