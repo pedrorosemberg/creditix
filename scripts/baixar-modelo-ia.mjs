@@ -61,8 +61,9 @@ main().catch((err) => {
   const mensagem = String(err?.message ?? err);
   if (/unauthorized|forbidden|401|403/i.test(mensagem)) {
     console.error(
-      "[baixar-modelo-ia] Isso parece falta de autenticação junto à Hugging Face (ela passou a exigir um " +
-        'token mesmo para baixar arquivos públicos). Gere um token gratuito, só de leitura, em ' +
+      "[baixar-modelo-ia] Erro de autorização/acesso — verifique se LOCAL_MODEL_ID aponta para um " +
+        "repositório público válido na Hugging Face. Se o modelo estiver correto, isso também pode ser " +
+        "rate limit anônimo: gere um token gratuito, só de leitura, em " +
         "https://huggingface.co/settings/tokens e configure HF_TOKEN nas variáveis de ambiente do build. " +
         "Isso NÃO envia nenhum dado de usuário para a Hugging Face — só autentica o download dos pesos " +
         "(arquivos públicos) durante o build.",

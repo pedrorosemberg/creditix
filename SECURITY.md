@@ -63,12 +63,12 @@ de rede acontece ao processar uma análise ou mensagem de chat. Por decisão
 de produto, o Gemini (API do Google) fica desativado por padrão pelo mesmo
 motivo — só é usado se alguém configurar `AI_PROVIDER=gemini` de propósito.
 
-O download desses pesos no build requer `HF_TOKEN` (token gratuito, só de
-leitura, gerado em huggingface.co/settings/tokens) — a Hugging Face passou
-a exigir autenticação mesmo para arquivos públicos. Esse token só é usado
-para autenticar o download de pesos públicos do modelo durante o build;
-nenhum dado de usuário é enviado à Hugging Face em nenhum momento, nem em
-build nem em runtime.
+O download desses pesos no build funciona sem nenhum token. Opcionalmente,
+`HF_TOKEN` (gratuito, só leitura, gerado em huggingface.co/settings/tokens)
+pode ser configurado para reduzir o risco de rate limit anônimo em builds
+muito frequentes. Esse token, se usado, só autentica o download de pesos
+públicos do modelo durante o build; nenhum dado de usuário é enviado à
+Hugging Face em nenhum momento, nem em build nem em runtime.
 
 Essa dependência traz duas vulnerabilidades conhecidas, sem correção
 disponível no momento, em pacotes transitivos do `onnxruntime-node`:

@@ -69,10 +69,11 @@ no próprio processo do servidor (`onnx-community/Qwen2.5-0.5B-Instruct`, via `@
 Face: os pesos do modelo são baixados **uma única vez, no build** (`scripts/baixar-modelo-ia.mjs`, hook
 `prebuild`) e ficam junto do próprio deploy; em runtime não há nenhuma chamada de rede.
 
-Esse download no build precisa de `HF_TOKEN` (gratuito, só leitura — gere em
-[huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)): a Hugging Face passou a exigir
-autenticação mesmo para arquivos públicos. Isso não envia nenhum dado de usuário para lá — só autentica
-o download dos pesos (arquivos públicos) durante o build, nunca em runtime.
+Esse download no build funciona sem nenhuma configuração extra. Opcionalmente, defina `HF_TOKEN`
+(gratuito, só leitura — gere em [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens))
+se builds muito frequentes esbarrarem em rate limit anônimo da Hugging Face. Isso não envia nenhum dado
+de usuário para lá — só autentica o download dos pesos (arquivos públicos) durante o build, nunca em
+runtime.
 
 - Self-hosted com um servidor [Ollama](https://ollama.com) próprio: defina `AI_PROVIDER=ollama` e
   `OLLAMA_HOST`/`OLLAMA_MODEL`.
