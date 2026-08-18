@@ -69,7 +69,7 @@ export async function enviarMensagemChatAction(_prev: ChatState, formData: FormD
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sessão expirada. Entre novamente." };
 
-  const limite = checarLimite(`chat:${user.id}`, 15, 10 * 60 * 1000);
+  const limite = await checarLimite(`chat:${user.id}`, 15, 10 * 60 * 1000);
   if (!limite.allowed) {
     return { error: "Muitas mensagens em pouco tempo. Aguarde alguns minutos." };
   }

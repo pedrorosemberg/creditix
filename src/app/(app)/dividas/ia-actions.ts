@@ -21,7 +21,7 @@ export async function gerarAnaliseIaAction(
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sessão expirada. Faça login novamente." };
 
-  const limite = checarLimite(`ia:${user.id}`, 10, 60 * 60 * 1000);
+  const limite = await checarLimite(`ia:${user.id}`, 10, 60 * 60 * 1000);
   if (!limite.allowed) {
     return { error: "Limite de análises por IA atingido nesta hora. Tente novamente mais tarde." };
   }

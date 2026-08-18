@@ -33,7 +33,7 @@ async function enviarEmail(destinatario: string, conteudo: { subject: string; ht
 
 export async function loginAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const ip = await ipDoRequisitante();
-  const limite = checarLimite(`login:${ip}`, 10, 5 * 60 * 1000);
+  const limite = await checarLimite(`login:${ip}`, 10, 5 * 60 * 1000);
   if (!limite.allowed) {
     return { error: "Muitas tentativas de login. Tente novamente em alguns minutos." };
   }
@@ -57,7 +57,7 @@ export async function loginAction(_prev: AuthState, formData: FormData): Promise
 
 export async function signupAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const ip = await ipDoRequisitante();
-  const limite = checarLimite(`signup:${ip}`, 5, 15 * 60 * 1000);
+  const limite = await checarLimite(`signup:${ip}`, 5, 15 * 60 * 1000);
   if (!limite.allowed) {
     return { error: "Muitas tentativas de cadastro. Tente novamente mais tarde." };
   }
@@ -91,8 +91,12 @@ export async function signupAction(_prev: AuthState, formData: FormData): Promis
     await enviarEmail(parsed.data.email, emailConfirmacaoCadastro(link));
   } catch (err) {
     const mensagem = err instanceof Error ? err.message : "";
+    console.error("[signupAction] Falha ao concluir cadastro:", err);
     if (mensagem.toLowerCase().includes("already been registered") || mensagem.toLowerCase().includes("already registered")) {
       return { error: "Este e-mail já tem uma conta. Tente entrar." };
+    }
+    if (mensagem.toLowerCase().includes("rate limit") || mensagem.toLowerCase().includes("too many requests")) {
+      return { error: "Muitos cadastros em pouco tempo. Aguarde alguns minutos e tente de novo." };
     }
     return { error: "Não foi possível concluir o cadastro. Tente novamente." };
   }
@@ -104,7 +108,7 @@ export async function signupAction(_prev: AuthState, formData: FormData): Promis
 
 export async function solicitarLinkMagicoAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const ip = await ipDoRequisitante();
-  const limite = checarLimite(`magiclink:${ip}`, 5, 15 * 60 * 1000);
+  const limite = await checarLimite(`magiclink:${ip}`, 5, 15 * 60 * 1000);
   if (!limite.allowed) {
     return { error: "Muitas tentativas. Tente novamente mais tarde." };
   }
@@ -129,7 +133,7 @@ export async function solicitarRecuperacaoSenhaAction(
   formData: FormData,
 ): Promise<AuthState> {
   const ip = await ipDoRequisitante();
-  const limite = checarLimite(`recuperar-senha:${ip}`, 5, 15 * 60 * 1000);
+  const limite = await checarLimite(`recuperar-senha:${ip}`, 5, 15 * 60 * 1000);
   if (!limite.allowed) {
     return { error: "Muitas tentativas. Tente novamente mais tarde." };
   }

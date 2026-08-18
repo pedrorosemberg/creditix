@@ -25,6 +25,7 @@ const csp = [
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
+  "object-src 'none'",
 ].join("; ");
 
 const securityHeaders = [
@@ -34,6 +35,14 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+  // Isola a janela de outras origens (mitiga ataques de canal lateral tipo
+  // Spectre via referências cross-origin a window) — sem custo, não afeta
+  // nenhuma integração que o app usa (não dependemos de postMessage entre
+  // origens nem de abrir popups de terceiros que precisem de acesso à janela).
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+  // Bloqueia arquivos de política cross-domain legados (Flash/PDF) — sem
+  // efeito prático hoje, mas fecha uma superfície antiga por padrão.
+  { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
 ];
 
 const nextConfig: NextConfig = {

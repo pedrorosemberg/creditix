@@ -22,10 +22,15 @@ detalhes e passos de reprodução. Responderemos o mais rápido possível.
   Ollama/Gemini) roda em Server Components, Server Actions ou Route Handlers — nunca no navegador.
 - **Validação de entrada:** toda mutação passa por schemas `zod` (`src/lib/security/validation.ts`) antes
   de tocar o banco, independentemente do que o formulário no cliente permita.
-- **Rate limiting:** login, cadastro e geração de análise por IA têm limite de tentativas por
-  IP/usuário (`src/lib/security/rate-limit.ts`) para reduzir força bruta e abuso de custo de IA.
-- **Cabeçalhos de segurança:** CSP, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
-  `Referrer-Policy` e HSTS configurados em `next.config.ts` para todas as rotas.
+- **Rate limiting:** login, cadastro, recuperação de senha, link mágico, troca de e-mail/senha, chat e
+  geração de análise por IA têm limite de tentativas por IP/usuário (`src/lib/security/rate-limit.ts`).
+  Usa Upstash Redis (contador compartilhado entre instâncias, plano gratuito) quando
+  `UPSTASH_REDIS_REST_URL`/`TOKEN` estão configurados; sem isso, cai para um contador em memória do
+  processo — suficiente em self-host de instância única, mas não confiável na Vercel sob carga real com
+  várias instâncias serverless concorrentes. Ver [`docs/AUTENTICACAO.md`](./docs/AUTENTICACAO.md).
+- **Cabeçalhos de segurança:** CSP (incluindo `object-src 'none'`), `X-Frame-Options: DENY`,
+  `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Cross-Origin-Opener-Policy: same-origin`,
+  `X-Permitted-Cross-Domain-Policies: none` e HSTS configurados em `next.config.ts` para todas as rotas.
 - **Sem indexação:** `robots: { index: false, follow: false }` no layout raiz — é um produto privado, não
   um site público.
 - **Cron protegido por segredo:** a rota de lembretes mensais (`/api/cron/lembretes`) exige
@@ -38,7 +43,25 @@ detalhes e passos de reprodução. Responderemos o mais rápido possível.
 
 Autenticação via Supabase Auth (GoTrue) com cookies HTTP-only gerenciados por `@supabase/ssr`. O
 middleware (`src/proxy.ts`) renova a sessão a cada requisição e bloqueia acesso a rotas autenticadas sem
-sessão válida.
+sessão válida. Detalhes do fluxo completo (cadastro, login, recuperação de senha, link mágico, o motivo de
+`/auth/confirmar` existir) em [`docs/AUTENTICACAO.md`](./docs/AUTENTICACAO.md).
+
+## O que sabemos que falta (próximos passos de segurança)
+
+- **Proteção contra senha vazada (HaveIBeenPwned)**: recurso nativo do Supabase Auth, mas exige plano
+  Pro ou superior — o projeto está no plano gratuito. Reavaliar se/quando fizer upgrade.
+  ([docs](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection))
+- **CAPTCHA no cadastro/login** (hCaptcha ou Cloudflare Turnstile, ambos com plano gratuito): o Supabase
+  Auth suporta captcha nativamente, mas a configuração (site key/secret) é feita no painel do Supabase,
+  fora do alcance de automação neste repositório — ver `docs/AUTENTICACAO.md#próximos-passos` para o
+  passo a passo manual.
+- **CSP com nonce em vez de `'unsafe-inline'`** no `script-src`: reduziria a superfície de XSS, mas exige
+  gerar e propagar um nonce por requisição (mudança maior, com risco real de quebrar alguma página se não
+  for testada com cuidado) — não fiz essa troca sem validação em ambiente real primeiro.
+- **MFA (TOTP)** para login: suportado pelo Supabase Auth no plano gratuito, mas exige uma tela de
+  enrolamento/verificação nova — ainda não construída.
+- **DMARC em modo `reject`** no domínio de envio de e-mail (`creditix.metadax.com.br`): configuração de
+  DNS, fora deste repositório — confirme com quem administra o DNS da METADAX.
 
 ## Responsabilidade em ambientes self-hosted
 

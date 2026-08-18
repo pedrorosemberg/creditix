@@ -142,7 +142,7 @@ export async function atualizarEmailAction(_prev: PerfilState, formData: FormDat
   } = await supabase.auth.getUser();
   if (!user?.email) return { error: "Sessão expirada. Entre novamente." };
 
-  const limite = checarLimite(`troca-email:${user.id}`, 3, 15 * 60 * 1000);
+  const limite = await checarLimite(`troca-email:${user.id}`, 3, 15 * 60 * 1000);
   if (!limite.allowed) {
     return { error: "Muitas tentativas. Tente novamente mais tarde." };
   }
@@ -197,7 +197,7 @@ export async function atualizarSenhaAction(_prev: PerfilState, formData: FormDat
   } = await supabase.auth.getUser();
   if (!user?.email) return { error: "Sessão expirada. Entre novamente." };
 
-  const limite = checarLimite(`troca-senha:${user.id}`, 5, 15 * 60 * 1000);
+  const limite = await checarLimite(`troca-senha:${user.id}`, 5, 15 * 60 * 1000);
   if (!limite.allowed) {
     return { error: "Muitas tentativas. Tente novamente mais tarde." };
   }

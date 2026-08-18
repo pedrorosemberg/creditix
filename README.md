@@ -19,14 +19,27 @@ abusivos — com base em legislação e jurisprudência brasileiras vigentes. Um
 - **Plano de recuperação financeira** com simulação à vista vs. parcelado para cada dívida, priorização
   configurável (avalanche, bola de neve ou jurídica primeiro) e recomendação de repactuação judicial
   quando o cenário exigir.
-- **Orçamento e transações**: registro de renda, gastos e lançamentos livres.
-- **Lembretes mensais por e-mail** (Resend) com as contas do mês.
-- **Parecer por IA** processado inteiramente no servidor (Ollama local por padrão; Gemini opcional).
+- **Transações e orçamento**: lançamento centralizado de receitas, despesas e pagamentos de dívida, com
+  periodicidade (única, diária, semanal, quinzenal, mensal, semestral, anual) alimentando automaticamente
+  a renda/gastos recorrentes usados no plano de recuperação.
+- **Contas bancárias**: cadastro das instituições envolvidas (credora ou pra pagamento), com detecção de
+  possível duplicidade ao lançar algo parecido (heurística por nome + segunda opinião opcional por IA).
+- **Lembretes por e-mail** (Resend), com frequência configurável e um botão de teste que dispara o envio
+  na hora, sem esperar o cron.
+- **Parecer por IA** processado inteiramente no servidor (Ollama local ou self-hosted por padrão; Gemini
+  opcional e desligado por padrão — ver [`SECURITY.md`](./SECURITY.md)).
+- **Programa de indicação** (`/convite`): link pessoal, com contagem de convites pendentes, aceitos e de
+  quantos indicados já quitaram alguma dívida — sem nunca expor os dados financeiros de quem foi indicado.
 
 ## Stack
 
 Next.js 16 (App Router) · Supabase (self-hosted ou Cloud) · Tailwind v4 · Resend · Ollama/Gemini ·
-TypeScript · Vitest. Detalhes em [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md).
+Upstash Redis (rate limit, opcional) · TypeScript · Vitest. Detalhes em
+[`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md); autenticação especificamente em
+[`docs/AUTENTICACAO.md`](./docs/AUTENTICACAO.md).
+
+Este repositório também tem um [`AGENTS.md`](./AGENTS.md) (lido automaticamente por agentes de IA/Claude
+Code) com convenções específicas do projeto — vale ler antes de propor uma mudança grande.
 
 ## Começando
 
@@ -61,4 +74,6 @@ jurídico individualizado** por advogado(a) ou pela Defensoria Pública.
 
 ## Licença
 
-MIT — veja [`LICENSE`](./LICENSE).
+MIT — veja [`LICENSE`](./LICENSE). Dentro do próprio app: `/licenca` explica em português o que é
+permitido, o que não é (uso de marca), e as variáveis pra self-host; `/privacidade` documenta como os
+dados são tratados e lista os subcontratados usados (Vercel, Supabase, Resend, Google Cloud Platform).

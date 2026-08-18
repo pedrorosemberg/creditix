@@ -63,7 +63,7 @@ export async function enviarLembreteTesteAction(
   if (!user) redirect("/login");
   if (!user.email) return { error: "Sua conta não tem um e-mail cadastrado." };
 
-  const limite = checarLimite(`lembrete-teste:${user.id}`, 5, 60 * 60 * 1000);
+  const limite = await checarLimite(`lembrete-teste:${user.id}`, 5, 60 * 60 * 1000);
   if (!limite.allowed) {
     return { error: "Limite de envios de teste atingido nesta hora. Tente novamente mais tarde." };
   }
