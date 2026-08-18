@@ -3,14 +3,14 @@ import { check, sleep } from "k6";
 
 /**
  * Teste de carga básico do fluxo público (login e páginas estáticas) do
- * ambiente de homologação. Rode manualmente com:
+ * ambiente de desenvolvimento. Rode manualmente com:
  *
- *   BASE_URL=https://hmg.creditix.metadax.com.br k6 run loadtest/dividas-flow.js
+ *   BASE_URL=https://dev.creditix.metadax.com.br k6 run loadtest/dividas-flow.js
  *
  * Como as rotas autenticadas exigem sessão real, este script cobre
  * primariamente a resiliência do login e do carregamento inicial — para
  * validar as rotas autenticadas, gere um token de teste dedicado e
- * complemente com cookies/headers de sessão antes de rodar contra hmg.
+ * complemente com cookies/headers de sessão antes de rodar contra dev.
  */
 export const options = {
   stages: [

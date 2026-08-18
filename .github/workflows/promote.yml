@@ -1,16 +1,15 @@
 name: Promover ambiente
 
-# Abre (ou atualiza) automaticamente a PR de promoção dev->hmg ou hmg->prod,
-# classifica a urgência (hotfix/emergencial vs. feature normal) pelos
-# commits que estão sendo promovidos, e liga auto-merge — a PR mergeia
-# sozinha assim que os checks obrigatórios da branch de destino (workflows
-# CI e Test Suite) passarem.
+# Abre (ou atualiza) automaticamente a PR de promoção dev->prod, classifica
+# a urgência (hotfix/emergencial vs. feature normal) pelos commits que
+# estão sendo promovidos, e liga auto-merge — a PR mergeia sozinha assim
+# que os checks obrigatórios da branch prod (workflows CI e Test Suite)
+# passarem.
 #
 # Disparado automaticamente pelo último step de ci.yml quando o CI passa em
-# dev ou hmg (via "gh workflow run", não por um evento push/pull_request —
-# só assim o GITHUB_TOKEN de lá pode acionar este workflow). Também pode
-# ser disparado manualmente (aba Actions -> Promover ambiente -> Run
-# workflow).
+# dev (via "gh workflow run", não por um evento push/pull_request — só
+# assim o GITHUB_TOKEN de lá pode acionar este workflow). Também pode ser
+# disparado manualmente (aba Actions -> Promover ambiente -> Run workflow).
 #
 # Requer o secret PROMOTE_PAT (um Personal Access Token, não o GITHUB_TOKEN
 # padrão) para criar a PR e fazer o merge, porque o GitHub não dispara
@@ -21,12 +20,6 @@ name: Promover ambiente
 
 on:
   workflow_dispatch:
-    inputs:
-      destino:
-        description: "Ambiente de destino"
-        required: true
-        type: choice
-        options: [hmg, prod]
 
 jobs:
   abrir-pr:
@@ -45,26 +38,14 @@ jobs:
             exit 1
           fi
 
-      - name: Definir origem/destino
-        id: branches
-        env:
-          DESTINO: ${{ inputs.destino }}
-        run: |
-          if [ "$DESTINO" = "hmg" ]; then ORIGEM="dev"; else ORIGEM="hmg"; fi
-          echo "origem=$ORIGEM" >> "$GITHUB_OUTPUT"
-          echo "destino=$DESTINO" >> "$GITHUB_OUTPUT"
-
       - name: Classificar urgência (hotfix/emergencial vs. feature)
         id: classificacao
-        env:
-          ORIGEM: ${{ steps.branches.outputs.origem }}
-          DESTINO: ${{ steps.branches.outputs.destino }}
         run: |
-          git fetch origin "$ORIGEM" "$DESTINO"
-          MENSAGENS=$(git log "origin/$DESTINO..origin/$ORIGEM" --format=%s)
+          git fetch origin dev prod
+          MENSAGENS=$(git log origin/prod..origin/dev --format=%s)
           if [ -z "$MENSAGENS" ]; then
             echo "label=" >> "$GITHUB_OUTPUT"
-            echo "Nada novo para promover de $ORIGEM para $DESTINO."
+            echo "Nada novo para promover de dev para prod."
             exit 0
           fi
           # Hotfix só quando TODOS os commits sendo promovidos são correção —
@@ -93,19 +74,17 @@ jobs:
         id: pr
         env:
           GH_TOKEN: ${{ secrets.PROMOTE_PAT }}
-          ORIGEM: ${{ steps.branches.outputs.origem }}
-          DESTINO: ${{ steps.branches.outputs.destino }}
           LABEL: ${{ steps.classificacao.outputs.label }}
         run: |
-          NUMERO=$(gh pr list --head "$ORIGEM" --base "$DESTINO" --state open --json number --jq '.[0].number')
+          NUMERO=$(gh pr list --head dev --base prod --state open --json number --jq '.[0].number')
           if [ -z "$NUMERO" ]; then
             gh pr create \
-              --head "$ORIGEM" \
-              --base "$DESTINO" \
-              --title "Promover $ORIGEM → $DESTINO" \
-              --body "PR automática de promoção de \`$ORIGEM\` para \`$DESTINO\`. Classificada como \`$LABEL\`. Mergeia automaticamente quando os checks obrigatórios passarem (ver docs/ENVIRONMENTS.md)." \
+              --head dev \
+              --base prod \
+              --title "Promover dev → prod" \
+              --body "PR automática de promoção de \`dev\` para \`prod\`. Classificada como \`$LABEL\`. Mergeia automaticamente quando os checks obrigatórios passarem (ver docs/ENVIRONMENTS.md)." \
               --label "$LABEL"
-            NUMERO=$(gh pr list --head "$ORIGEM" --base "$DESTINO" --state open --json number --jq '.[0].number')
+            NUMERO=$(gh pr list --head dev --base prod --state open --json number --jq '.[0].number')
           else
             gh pr edit "$NUMERO" --add-label "$LABEL"
           fi
@@ -122,24 +101,21 @@ jobs:
         if: steps.classificacao.outputs.label != ''
         env:
           GH_TOKEN: ${{ secrets.PROMOTE_PAT }}
-          ORIGEM: ${{ steps.branches.outputs.origem }}
-          DESTINO: ${{ steps.branches.outputs.destino }}
           LABEL: ${{ steps.classificacao.outputs.label }}
         run: |
           URGENTE="false"
           [ "$LABEL" = "criticidade:hotfix" ] && URGENTE="true"
-          gh workflow run test-suite.yml --ref "$ORIGEM" -f destino="$DESTINO" -f urgente="$URGENTE"
+          gh workflow run test-suite.yml --ref dev -f urgente="$URGENTE"
 
       - name: Ligar auto-merge
-        # --merge, não --squash: dev/hmg/prod são branches de longa duração
+        # --merge, não --squash: dev e prod são branches de longa duração
         # que se mergeiam repetidamente entre si — squash quebra a
         # ancestralidade compartilhada entre elas (o commit squashado no
         # destino nunca é ancestral dos commits individuais que continuam
         # na origem), e a PRÓXIMA promoção do mesmo arquivo aparece como
         # conflito mesmo sem mudança conceitual nenhuma — confirmado na
-        # prática (PR #5 ficou "dirty"/com conflito só por causa disso).
-        # Squash continua correto para branches de feature que morrem após
-        # o merge — não é o caso aqui.
+        # prática. Squash continua correto para branches de feature que
+        # morrem após o merge — não é o caso aqui.
         if: steps.classificacao.outputs.label != ''
         env:
           GH_TOKEN: ${{ secrets.PROMOTE_PAT }}

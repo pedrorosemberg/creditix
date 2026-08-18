@@ -1,10 +1,10 @@
-name: Test Suite (promoção dev→hmg→prod)
+name: Test Suite (promoção dev→prod)
 
-# Suíte completa exigida para promover para hmg ou prod, além do gate rápido
-# do workflow CI (que já roda em toda PR, incluindo estas). Configure os
-# jobs abaixo como "required status checks" na proteção das branches hmg e
-# prod (veja docs/ENVIRONMENTS.md) — os nomes dos jobs são o texto que
-# aparece na configuração de proteção.
+# Suíte completa exigida para promover dev->prod, além do gate rápido do
+# workflow CI (que já roda em toda PR, incluindo esta). Configure os jobs
+# abaixo como "required status checks" na proteção da branch prod (veja
+# docs/ENVIRONMENTS.md) — os nomes dos jobs são o texto que aparece na
+# configuração de proteção.
 #
 # Gate de criticidade/urgência: se a PR de promoção estiver marcada com a
 # label "hotfix" ou "emergencial" (aplicada automaticamente pelo workflow
@@ -25,14 +25,9 @@ name: Test Suite (promoção dev→hmg→prod)
 
 on:
   pull_request:
-    branches: [hmg, prod]
+    branches: [prod]
   workflow_dispatch:
     inputs:
-      destino:
-        description: "Ambiente de destino (hmg ou prod) — só usado quando disparado manualmente/pelo promote.yml, não numa PR real"
-        required: false
-        type: choice
-        options: [hmg, prod]
       urgente:
         description: "Pular os gates lentos (mesma classificação já feita pelo promote.yml)"
         required: false
@@ -48,12 +43,10 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       urgente: ${{ steps.check.outputs.urgente }}
-      base_url_env: ${{ steps.check.outputs.base_url_env }}
     steps:
       - id: check
         env:
           LABELS_JSON: ${{ toJSON(github.event.pull_request.labels) }}
-          BASE_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.destino || github.base_ref }}
           URGENTE_INPUT: ${{ inputs.urgente }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
@@ -66,18 +59,7 @@ jobs:
             ")
           fi
           echo "urgente=$URGENTE" >> "$GITHUB_OUTPUT"
-          # O que testamos é sempre o ambiente que JÁ contém o candidato desta
-          # PR, não o destino (que ainda não recebeu o merge). Numa PR
-          # dev->hmg, quem tem o candidato é o preview de dev; numa PR
-          # hmg->prod, é o próprio hmg (já promovido e validado antes desta PR
-          # existir). Testar o destino antigo aqui não provaria nada sobre o
-          # código que está de fato subindo.
-          if [ "$BASE_REF" = "prod" ]; then
-            echo "base_url_env=HMG_BASE_URL" >> "$GITHUB_OUTPUT"
-          else
-            echo "base_url_env=DEV_BASE_URL" >> "$GITHUB_OUTPUT"
-          fi
-          echo "Urgente: $URGENTE / destino: ${BASE_REF:-desconhecido}"
+          echo "Urgente: $URGENTE"
 
   # --- Segurança: sempre obrigatório, nunca pulado por urgência. ---
   seguranca:
@@ -121,7 +103,7 @@ jobs:
     needs: classificar-urgencia
     runs-on: ubuntu-latest
     env:
-      BASE_URL: ${{ vars[needs.classificar-urgencia.outputs.base_url_env] || secrets[needs.classificar-urgencia.outputs.base_url_env] }}
+      BASE_URL: ${{ vars.DEV_BASE_URL || secrets.DEV_BASE_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -136,7 +118,7 @@ jobs:
     if: needs.classificar-urgencia.outputs.urgente != 'true'
     runs-on: ubuntu-latest
     env:
-      BASE_URL: ${{ vars[needs.classificar-urgencia.outputs.base_url_env] || secrets[needs.classificar-urgencia.outputs.base_url_env] }}
+      BASE_URL: ${{ vars.DEV_BASE_URL || secrets.DEV_BASE_URL }}
     steps:
       - uses: actions/checkout@v4
 
@@ -150,7 +132,7 @@ jobs:
 
       - name: Sem BASE_URL configurada
         if: env.BASE_URL == ''
-        run: echo "Pulado — configure HMG_BASE_URL/PROD_BASE_URL para habilitar o teste de carga real."
+        run: echo "Pulado — configure DEV_BASE_URL para habilitar o teste de carga real."
 
   # --- Eficiência: performance real via Lighthouse. Pulado em hotfix/sem BASE_URL. ---
   eficiencia:
@@ -158,7 +140,7 @@ jobs:
     if: needs.classificar-urgencia.outputs.urgente != 'true'
     runs-on: ubuntu-latest
     env:
-      BASE_URL: ${{ vars[needs.classificar-urgencia.outputs.base_url_env] || secrets[needs.classificar-urgencia.outputs.base_url_env] }}
+      BASE_URL: ${{ vars.DEV_BASE_URL || secrets.DEV_BASE_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -175,7 +157,7 @@ jobs:
     if: needs.classificar-urgencia.outputs.urgente != 'true'
     runs-on: ubuntu-latest
     env:
-      BASE_URL: ${{ vars[needs.classificar-urgencia.outputs.base_url_env] || secrets[needs.classificar-urgencia.outputs.base_url_env] }}
+      BASE_URL: ${{ vars.DEV_BASE_URL || secrets.DEV_BASE_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -205,4 +187,4 @@ jobs:
 
       - name: Sem BASE_URL configurada
         if: env.BASE_URL == ''
-        run: echo "Pulado — configure HMG_BASE_URL/PROD_BASE_URL para habilitar o smoke E2E."
+        run: echo "Pulado — configure DEV_BASE_URL para habilitar o smoke E2E."
