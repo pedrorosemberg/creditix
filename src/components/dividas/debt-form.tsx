@@ -1,13 +1,15 @@
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Field, Input, Label, Select, Textarea } from "@/components/ui/input";
-import type { Debt } from "@/types/database.types";
+import type { BankAccount, Debt } from "@/types/database.types";
 
 export function DebtForm({
   action,
   divida,
+  contasBancarias = [],
 }: {
   action: (formData: FormData) => void | Promise<void>;
   divida?: Partial<Debt>;
+  contasBancarias?: Pick<BankAccount, "id" | "apelido" | "instituicao_nome">[];
 }) {
   return (
     <form action={action} className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -101,6 +103,24 @@ export function DebtForm({
           defaultValue={divida?.valor_desconto_avista ?? ""}
         />
       </Field>
+      <div className="md:col-span-2">
+        <Label htmlFor="bank_account_id">Conta bancária vinculada (opcional)</Label>
+        <Select id="bank_account_id" name="bank_account_id" defaultValue={divida?.bank_account_id ?? ""}>
+          <option value="">Nenhuma</option>
+          {contasBancarias.map((conta) => (
+            <option key={conta.id} value={conta.id}>
+              {conta.apelido} ({conta.instituicao_nome})
+            </option>
+          ))}
+        </Select>
+        <p className="mt-1 text-xs text-foreground-muted">
+          A conta que você deve, ou a que vai usar pra pagar essa dívida.{" "}
+          <a href="/contas-bancarias" className="underline">
+            Cadastrar uma conta
+          </a>
+          .
+        </p>
+      </div>
       <div className="flex items-center gap-2 md:col-span-2">
         <input
           id="negativado"

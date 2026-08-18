@@ -8,7 +8,10 @@ import { atualizarDividaAction, excluirDividaAction } from "../../actions";
 export default async function EditarDividaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data: divida } = await supabase.from("debts").select("*").eq("id", id).maybeSingle();
+  const [{ data: divida }, { data: contasBancarias }] = await Promise.all([
+    supabase.from("debts").select("*").eq("id", id).maybeSingle(),
+    supabase.from("bank_accounts").select("id, apelido, instituicao_nome").order("apelido"),
+  ]);
 
   if (!divida) notFound();
 
@@ -18,7 +21,7 @@ export default async function EditarDividaPage({ params }: { params: Promise<{ i
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">Editar dívida</h1>
       <Card>
-        <DebtForm action={atualizarComId} divida={divida} />
+        <DebtForm action={atualizarComId} divida={divida} contasBancarias={contasBancarias ?? []} />
       </Card>
       <Card className="border-danger">
         <p className="mb-3 text-sm font-medium text-danger">Excluir esta dívida</p>

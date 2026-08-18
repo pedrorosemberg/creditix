@@ -1,8 +1,15 @@
+import { createClient } from "@/lib/supabase/server";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { DebtForm } from "@/components/dividas/debt-form";
 import { criarDividaAction } from "../actions";
 
-export default function NovaDividaPage() {
+export default async function NovaDividaPage() {
+  const supabase = await createClient();
+  const { data: contasBancarias } = await supabase
+    .from("bank_accounts")
+    .select("id, apelido, instituicao_nome")
+    .order("apelido");
+
   return (
     <div className="space-y-6">
       <div>
@@ -15,7 +22,7 @@ export default function NovaDividaPage() {
       <Card>
         <CardTitle className="sr-only">Dados da dívida</CardTitle>
         <CardDescription className="sr-only">Formulário de cadastro de dívida</CardDescription>
-        <DebtForm action={criarDividaAction} />
+        <DebtForm action={criarDividaAction} contasBancarias={contasBancarias ?? []} />
       </Card>
     </div>
   );

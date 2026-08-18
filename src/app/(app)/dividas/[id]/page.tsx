@@ -11,6 +11,7 @@ import { simularOpcoesParcelamento } from "@/lib/finance/simulacao";
 import { fundamento } from "@/lib/legal/fundamentos";
 import { formatarData, formatarMoeda, formatarPercentual } from "@/lib/utils";
 import { AnaliseIaPainel } from "@/components/dividas/analise-ia-painel";
+import { BankBadge } from "@/components/ui/bank-badge";
 
 // Dá mais tempo à Server Action de análise por IA — em especial o
 // provedor "local" (modelo embutido), que pode ser lento no cold start.
@@ -37,12 +38,17 @@ export default async function DividaDetalhePage({ params }: { params: Promise<{ 
   });
   const parcelamentos = simularOpcoesParcelamento(Number(divida.valor_atual));
 
-  const { data: analisesIa } = await supabase
-    .from("ai_analyses")
-    .select("*")
-    .eq("debt_id", divida.id)
-    .order("created_at", { ascending: false })
-    .limit(1);
+  const [{ data: analisesIa }, { data: contaVinculada }] = await Promise.all([
+    supabase
+      .from("ai_analyses")
+      .select("*")
+      .eq("debt_id", divida.id)
+      .order("created_at", { ascending: false })
+      .limit(1),
+    divida.bank_account_id
+      ? supabase.from("bank_accounts").select("apelido, instituicao_nome").eq("id", divida.bank_account_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -50,6 +56,14 @@ export default async function DividaDetalhePage({ params }: { params: Promise<{ 
         <div>
           <h1 className="text-xl font-semibold">{divida.credor_nome}</h1>
           <p className="text-sm text-foreground-muted">{divida.produto_servico}</p>
+          {contaVinculada && (
+            <div className="mt-2 flex items-center gap-2">
+              <BankBadge nome={contaVinculada.instituicao_nome} className="h-6 w-6 text-[10px]" />
+              <span className="text-xs text-foreground-muted">
+                {contaVinculada.apelido} ({contaVinculada.instituicao_nome})
+              </span>
+            </div>
+          )}
         </div>
         <div className="flex gap-2">
           <Link href={`/dividas/${divida.id}/editar`}>

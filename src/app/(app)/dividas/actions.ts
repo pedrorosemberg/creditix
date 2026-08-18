@@ -27,6 +27,7 @@ function parseFormData(formData: FormData) {
     valor_desconto_avista: vazioParaNull(formData.get("valor_desconto_avista")),
     status: formData.get("status") || "ativa",
     observacoes: vazioParaNull(formData.get("observacoes")) ?? "",
+    bank_account_id: vazioParaNull(formData.get("bank_account_id")) ?? "",
   });
 }
 
@@ -56,6 +57,7 @@ export async function criarDividaAction(formData: FormData) {
     status: dados.status,
     fonte: "manual",
     observacoes: dados.observacoes || null,
+    bank_account_id: dados.bank_account_id || null,
   });
 
   if (error) throw new Error("Não foi possível salvar a dívida.");
@@ -89,6 +91,7 @@ export async function atualizarDividaAction(id: string, formData: FormData) {
       valor_desconto_avista: dados.valor_desconto_avista ?? null,
       status: dados.status,
       observacoes: dados.observacoes || null,
+      bank_account_id: dados.bank_account_id || null,
     })
     .eq("id", dividaId);
 

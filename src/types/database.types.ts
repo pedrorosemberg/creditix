@@ -59,6 +59,19 @@ export type Debt = {
   status: StatusDividaDb;
   fonte: string;
   observacoes: string | null;
+  bank_account_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type BankAccount = {
+  id: string;
+  user_id: string;
+  instituicao_id: string;
+  instituicao_nome: string;
+  apelido: string;
+  numero_conta: string | null;
+  observacoes: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -187,6 +200,10 @@ export type Database = {
       debts: TableDef<
         Debt,
         Omit<Debt, "id" | "created_at" | "updated_at"> & { id?: string }
+      >;
+      bank_accounts: TableDef<
+        BankAccount,
+        Omit<BankAccount, "id" | "created_at" | "updated_at"> & { id?: string }
       >;
       incomes: TableDef<
         Income,

@@ -14,12 +14,14 @@ import {
   ScrollText,
   FileBarChart,
   LineChart,
+  Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ITEMS = [
   { href: "/dashboard", label: "Painel", icon: LayoutDashboard },
   { href: "/dividas", label: "Dívidas", icon: Landmark },
+  { href: "/contas-bancarias", label: "Contas bancárias", icon: Building2 },
   { href: "/transacoes", label: "Transações", icon: ArrowLeftRight },
   { href: "/orcamento", label: "Orçamento", icon: Wallet },
   { href: "/analises", label: "Análises", icon: LineChart },
@@ -60,7 +62,15 @@ export function Sidebar() {
         })}
       </nav>
       <div className="border-t border-border p-4 text-xs text-foreground-muted">
-        Um produto <span className="font-medium text-foreground">METADAX</span>
+        Um produto{" "}
+        <a
+          href="https://www.metadax.com.br"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-display tracking-wide text-brand-red hover:underline"
+        >
+          METADAX
+        </a>
       </div>
     </aside>
   );

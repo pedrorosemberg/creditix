@@ -32,6 +32,15 @@ export const debtSchema = z.object({
   valor_desconto_avista: z.coerce.number().min(0).max(999_999_999).optional(),
   status: statusDividaSchema.default("ativa"),
   observacoes: z.string().trim().max(2000).optional().or(z.literal("")),
+  bank_account_id: z.string().uuid().optional().or(z.literal("")),
+});
+
+export const bankAccountSchema = z.object({
+  instituicao_id: z.string().trim().min(1).max(100),
+  instituicao_nome: z.string().trim().min(2, "Informe o nome da instituição").max(200),
+  apelido: z.string().trim().min(2, "Dê um apelido para a conta").max(100),
+  numero_conta: z.string().trim().max(50).optional().or(z.literal("")),
+  observacoes: z.string().trim().max(1000).optional().or(z.literal("")),
 });
 
 export const incomeSchema = z.object({
