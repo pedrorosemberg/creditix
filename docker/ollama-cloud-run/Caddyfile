@@ -1,0 +1,11 @@
+# O Cloud Run já termina o HTTPS na borda (a URL pública é sempre
+# https://...run.app) e repassa a requisição em HTTP simples pro container
+# na porta $PORT — por isso, ao contrário do Caddyfile da variante VM, aqui
+# não precisa de nenhuma configuração de certificado/ACME.
+:{$PORT} {
+	basicauth {
+		{$BASIC_AUTH_USER} {$BASIC_AUTH_HASH}
+	}
+
+	reverse_proxy 127.0.0.1:11434
+}
