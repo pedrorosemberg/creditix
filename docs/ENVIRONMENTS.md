@@ -61,8 +61,9 @@ suíte completa rode de fato.
 
 ## Configurando a promoção automática (uma vez, manualmente)
 
-**Status atual desta instância:** `PROMOTE_PAT`, `DEV_BASE_URL`, `HMG_BASE_URL` e `PROD_BASE_URL` já estão
-configurados — a promoção dev→hmg→prod roda de ponta a ponta sem intervenção manual. `NEXT_PUBLIC_GRAFANA_FARO_URL`
+**Status atual desta instância:** `PROMOTE_PAT` (com as permissões corretas, incluindo `Issues`),
+`DEV_BASE_URL`, `HMG_BASE_URL`, `PROD_BASE_URL` e "Allow auto-merge" já estão configurados — a promoção
+dev→hmg→prod roda de ponta a ponta sem intervenção manual. `NEXT_PUBLIC_GRAFANA_FARO_URL`
 (observabilidade opcional, ver `docs/OBSERVABILIDADE.md`) ainda não foi configurada — sem ela, o app
 funciona normalmente, só sem o Grafana Faro.
 
