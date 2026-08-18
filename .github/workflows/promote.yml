@@ -27,10 +27,10 @@ on:
 
 jobs:
   abrir-pr:
-    if: |
-      github.event_name == 'workflow_dispatch' ||
+    if: >
+      ${{ github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
-       contains(fromJSON('["dev", "hmg"]'), github.event.workflow_run.head_branch))
+      contains(fromJSON('["dev", "hmg"]'), github.event.workflow_run.head_branch)) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
