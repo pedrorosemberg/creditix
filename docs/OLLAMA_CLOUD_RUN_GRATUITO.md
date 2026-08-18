@@ -39,7 +39,7 @@ Duas vantagens sobre tentar deixar o serviço público:
 
 ## 1. Pré-requisitos
 
-- Um projeto no Google Cloud já criado (ex.: `llmmtdx`).
+- Um projeto no Google Cloud já criado — troque `SEU_PROJETO_GCP` pelo ID real do seu projeto em todos os comandos abaixo.
 - [Google Cloud Shell](https://cloud.google.com/shell) — o ícone `>_` no
   canto superior direito do console. Ele já vem com `gcloud`, `docker` e
   autenticação prontos, sem precisar instalar nada na sua máquina.
@@ -47,7 +47,7 @@ Duas vantagens sobre tentar deixar o serviço público:
 Abra o Cloud Shell e confirme o projeto certo está selecionado:
 
 ```bash
-gcloud config set project llmmtdx
+gcloud config set project SEU_PROJETO_GCP
 gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
 ```
 
@@ -97,12 +97,12 @@ gcloud artifacts repositories create ollama-repo \
   --description="Imagens do servidor Ollama"
 
 docker build --build-arg OLLAMA_MODEL=qwen2.5:3b \
-  -t southamerica-east1-docker.pkg.dev/llmmtdx/ollama-repo/ollama-servidor .
+  -t southamerica-east1-docker.pkg.dev/SEU_PROJETO_GCP/ollama-repo/ollama-servidor .
 
-docker push southamerica-east1-docker.pkg.dev/llmmtdx/ollama-repo/ollama-servidor
+docker push southamerica-east1-docker.pkg.dev/SEU_PROJETO_GCP/ollama-repo/ollama-servidor
 ```
 
-Troque `llmmtdx` pelo ID do seu projeto se for diferente. O build baixa o
+Troque `SEU_PROJETO_GCP` pelo ID do seu projeto se for diferente. O build baixa o
 modelo escolhido durante o processo — pode levar vários minutos
 dependendo do tamanho do modelo, é esperado.
 
@@ -110,7 +110,7 @@ dependendo do tamanho do modelo, é esperado.
 
 ```bash
 gcloud run deploy ollama-servidor \
-  --image southamerica-east1-docker.pkg.dev/llmmtdx/ollama-repo/ollama-servidor \
+  --image southamerica-east1-docker.pkg.dev/SEU_PROJETO_GCP/ollama-repo/ollama-servidor \
   --region southamerica-east1 \
   --no-allow-unauthenticated \
   --port 8080 \
@@ -141,11 +141,11 @@ gcloud iam service-accounts create vercel-ollama-invoker \
 
 gcloud run services add-iam-policy-binding ollama-servidor \
   --region=southamerica-east1 \
-  --member="serviceAccount:vercel-ollama-invoker@llmmtdx.iam.gserviceaccount.com" \
+  --member="serviceAccount:vercel-ollama-invoker@SEU_PROJETO_GCP.iam.gserviceaccount.com" \
   --role=roles/run.invoker
 
 gcloud iam service-accounts keys create $HOME/vercel-ollama-key.json \
-  --iam-account=vercel-ollama-invoker@llmmtdx.iam.gserviceaccount.com
+  --iam-account=vercel-ollama-invoker@SEU_PROJETO_GCP.iam.gserviceaccount.com
 cat $HOME/vercel-ollama-key.json
 ```
 
