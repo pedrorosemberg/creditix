@@ -48,7 +48,7 @@ export function ConsolidadoReportPdf({ dados, filtros }: { dados: DadosRelatorio
       <Page size="A4" style={styles.page}>
         <Text style={styles.title}>Relatório consolidado — Creditix</Text>
         <Text style={styles.subtitle}>
-          Gerado em {new Date().toLocaleDateString("pt-BR")} · {periodo}
+          Gerado em {new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })} · {periodo}
         </Text>
 
         {filtros.secoes.includes("dividas") && (

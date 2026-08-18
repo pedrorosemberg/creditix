@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getResendClient, REMETENTE_PADRAO } from "@/lib/email/resend";
 import { obterItensLembrete, renderLembreteHtml } from "@/lib/email/lembrete-mensal";
 import { registrarLog } from "@/lib/activity-log";
+import { hojeBrasil } from "@/lib/utils";
 import type { FrequenciaLembreteDb } from "@/types/database.types";
 
 export const dynamic = "force-dynamic";
@@ -23,9 +24,14 @@ function diaSecundarioQuinzenal(diaBase: number): number {
   return somado > 28 ? somado - 28 : somado;
 }
 
-function deveEnviarHoje(perfil: PerfilLembrete, hoje: Date): boolean {
-  const diaMes = hoje.getUTCDate();
-  const diaSemana = hoje.getUTCDay();
+function deveEnviarHoje(perfil: PerfilLembrete, dataReferencia: string): boolean {
+  // dataReferencia já vem no calendário de Brasília (hojeBrasil()); ancora
+  // em meio-dia UTC só pra extrair dia/dia-da-semana sem risco de o fuso
+  // do processo empurrar pra data adjacente.
+  const [ano, mes, dia] = dataReferencia.split("-").map(Number);
+  const referencia = new Date(Date.UTC(ano, mes - 1, dia, 12));
+  const diaMes = referencia.getUTCDate();
+  const diaSemana = referencia.getUTCDay();
 
   switch (perfil.lembrete_frequencia) {
     case "semanal":
@@ -55,8 +61,7 @@ export async function GET(request: Request) {
   }
 
   const admin = createAdminClient();
-  const hoje = new Date();
-  const dataReferencia = hoje.toISOString().slice(0, 10);
+  const dataReferencia = hojeBrasil();
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://creditix.metadax.com.br";
 
   const { data: perfis, error: perfisError } = await admin
@@ -70,7 +75,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: perfisError.message }, { status: 500 });
   }
 
-  const candidatos = (perfis ?? []).filter((p) => deveEnviarHoje(p, hoje));
+  const candidatos = (perfis ?? []).filter((p) => deveEnviarHoje(p, dataReferencia));
 
   const resend = getResendClient();
   let enviados = 0;

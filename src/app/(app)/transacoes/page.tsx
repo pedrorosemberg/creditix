@@ -3,7 +3,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { DeleteIconButton } from "@/components/ui/delete-icon-button";
 import { Field, Input, Label, Select } from "@/components/ui/input";
-import { formatarData, formatarMoeda } from "@/lib/utils";
+import { formatarData, formatarMoeda, hojeBrasil } from "@/lib/utils";
 import { TIPO_TRANSACAO_LABEL } from "@/lib/constants/labels";
 import { criarTransacaoAction, excluirTransacaoAction } from "./actions";
 
@@ -14,7 +14,7 @@ export default async function TransacoesPage() {
     supabase.from("debts").select("id, credor_nome").order("credor_nome"),
   ]);
 
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = hojeBrasil();
 
   return (
     <div className="space-y-6">

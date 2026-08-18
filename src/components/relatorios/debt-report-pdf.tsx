@@ -31,7 +31,9 @@ export function DebtReportPdf({
     <Document>
       <Page size="A4" style={styles.page}>
         <Text style={styles.title}>Relatório de dívida — Creditix</Text>
-        <Text style={styles.subtitle}>Gerado em {new Date().toLocaleDateString("pt-BR")}</Text>
+        <Text style={styles.subtitle}>
+          Gerado em {new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+        </Text>
 
         <View style={styles.row}>
           <Text style={styles.label}>Credor</Text>
