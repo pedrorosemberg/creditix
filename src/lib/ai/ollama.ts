@@ -70,7 +70,11 @@ export class OllamaProvider implements AiProvider {
     });
 
     if (!resposta.ok) {
-      throw new Error(`Falha ao chamar o Ollama (${resposta.status}). Verifique se "ollama serve" está ativo.`);
+      const corpo = await resposta.text().catch(() => "");
+      throw new Error(
+        `Falha ao chamar o Ollama (${resposta.status}). Verifique se "ollama serve" está ativo.` +
+          (corpo ? ` Detalhe: ${corpo.slice(0, 500)}` : ""),
+      );
     }
 
     const dados = (await resposta.json()) as { response: string };
