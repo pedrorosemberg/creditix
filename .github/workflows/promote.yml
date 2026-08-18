@@ -131,7 +131,16 @@ jobs:
           gh workflow run test-suite.yml --ref "$ORIGEM" -f destino="$DESTINO" -f urgente="$URGENTE"
 
       - name: Ligar auto-merge
+        # --merge, não --squash: dev/hmg/prod são branches de longa duração
+        # que se mergeiam repetidamente entre si — squash quebra a
+        # ancestralidade compartilhada entre elas (o commit squashado no
+        # destino nunca é ancestral dos commits individuais que continuam
+        # na origem), e a PRÓXIMA promoção do mesmo arquivo aparece como
+        # conflito mesmo sem mudança conceitual nenhuma — confirmado na
+        # prática (PR #5 ficou "dirty"/com conflito só por causa disso).
+        # Squash continua correto para branches de feature que morrem após
+        # o merge — não é o caso aqui.
         if: steps.classificacao.outputs.label != ''
         env:
           GH_TOKEN: ${{ secrets.PROMOTE_PAT }}
-        run: gh pr merge "${{ steps.pr.outputs.numero }}" --auto --squash
+        run: gh pr merge "${{ steps.pr.outputs.numero }}" --auto --merge
