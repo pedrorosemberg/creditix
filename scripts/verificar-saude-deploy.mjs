@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Checagem "cloud": o deploy do ambiente de destino (hmg ou prod) está de
+// Checagem "cloud": o deploy do ambiente de destino (dev ou prod) está de
 // fato no ar, servindo HTTPS corretamente e respondendo dentro de um tempo
 // razoável. É deliberadamente simples (sem token de API de nenhum provedor)
 // para funcionar tanto com Vercel quanto com o stack self-hosted em

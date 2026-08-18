@@ -1,21 +1,21 @@
 name: Verificação pós-deploy
 
-# Depois que uma promoção é mergeada em hmg ou prod, o deploy na nuvem
-# (Vercel ou self-hosted) acontece de forma assíncrona — um merge verde não
-# garante que o deploy resultante subiu com sucesso. Este workflow espera um
-# pouco (dar tempo do build/deploy terminar) e confere a saúde real do
-# ambiente. Se falhar, o código já está mergeado mas o ambiente está
-# quebrado — trate como incidente, não como "a promoção falhou".
+# Depois que uma promoção é mergeada em prod, o deploy na nuvem (Vercel ou
+# self-hosted) acontece de forma assíncrona — um merge verde não garante
+# que o deploy resultante subiu com sucesso. Este workflow espera um pouco
+# (dar tempo do build/deploy terminar) e confere a saúde real do ambiente.
+# Se falhar, o código já está mergeado mas o ambiente está quebrado — trate
+# como incidente, não como "a promoção falhou".
 
 on:
   push:
-    branches: [hmg, prod]
+    branches: [prod]
 
 jobs:
   verificar:
     runs-on: ubuntu-latest
     env:
-      BASE_URL: ${{ github.ref_name == 'prod' && (vars.PROD_BASE_URL || secrets.PROD_BASE_URL) || (vars.HMG_BASE_URL || secrets.HMG_BASE_URL) }}
+      BASE_URL: ${{ vars.PROD_BASE_URL || secrets.PROD_BASE_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,4 +32,4 @@ jobs:
 
       - name: Sem BASE_URL configurada
         if: env.BASE_URL == ''
-        run: echo "Pulado — configure HMG_BASE_URL/PROD_BASE_URL para habilitar a verificação pós-deploy."
+        run: echo "Pulado — configure PROD_BASE_URL para habilitar a verificação pós-deploy."

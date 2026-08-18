@@ -55,5 +55,5 @@ pela METADAX (`creditix.metadax.com.br`). Código aberto sob MIT (ver [`LICENSE`
 - **Migrations são cumulativas e nunca editadas depois de aplicadas**: cada arquivo em
   `supabase/migrations/` é aplicado uma vez, na ordem do nome (timestamp). Para mudar algo já aplicado,
   crie uma nova migration — nunca edite uma antiga já mergeada.
-- **Branches**: `dev` (principal) → `hmg` → `prod`, só por Pull Request com CI obrigatório (ver
-  `docs/ENVIRONMENTS.md`). Nunca push direto em `hmg`/`prod`.
+- **Branches**: `dev` (principal) → `prod`, só por Pull Request com CI obrigatório (ver
+  `docs/ENVIRONMENTS.md`). Nunca push direto em `prod`.

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Roda o Lighthouse (via CLI, headless Chrome) contra uma URL já implantada
-// (hmg ou prod) e falha se a pontuação de performance cair abaixo do piso.
+// (dev ou prod) e falha se a pontuação de performance cair abaixo do piso.
 // Só é chamado quando BASE_URL está configurada (ver test-suite.yml) —
 // medir performance real exige um ambiente vivo, não faz sentido contra
 // localhost/preview efêmero.

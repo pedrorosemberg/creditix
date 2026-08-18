@@ -45,7 +45,7 @@ Para expor este ambiente na internet (ex.: em uma VPS), coloque um proxy HTTPS n
    vez de Ollama local.
 6. `npm install && npm run dev`.
 7. Para produção: importe o repositório na Vercel, configure as variáveis de ambiente por Environment
-   (Production = branch `prod`; Preview = `dev`/`hmg`) e configure um Cron Job da Vercel (ou externo)
+   (Production = branch `prod`; Preview = `dev`) e configure um Cron Job da Vercel (ou externo)
    chamando `GET /api/cron/lembretes` diariamente com o header
    `Authorization: Bearer <CRON_SECRET>`.
 

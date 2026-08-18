@@ -1,15 +1,14 @@
 name: CI
 
-# Gate obrigatório para promoção entre ambientes: nenhuma PR para hmg ou
-# prod deve ser mergeada sem este workflow verde (configure isso como
-# "required status check" na proteção das branches hmg e prod — veja
-# docs/ENVIRONMENTS.md).
+# Gate obrigatório para promoção dev -> prod: nenhuma PR para prod deve ser
+# mergeada sem este workflow verde (configure isso como "required status
+# check" na proteção da branch prod — veja docs/ENVIRONMENTS.md).
 
 on:
   push:
-    branches: [dev, hmg, prod]
+    branches: [dev, prod]
   pull_request:
-    branches: [dev, hmg, prod]
+    branches: [dev, prod]
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -65,16 +64,13 @@ jobs:
         run: npm audit --audit-level=high
         continue-on-error: true
 
-      - name: Disparar promoção automática (dev->hmg ou hmg->prod)
-        # Só em push (não em PR) e só nas branches de origem de uma
-        # promoção. O workflow_run como gatilho pra isso se mostrou
-        # pouco confiável neste ambiente (fires instantaneamente, sem
-        # esperar este job terminar) — chamar workflow_dispatch
-        # explicitamente aqui é o jeito documentado e confiável de um
-        # workflow disparar outro.
-        if: github.event_name == 'push' && (github.ref_name == 'dev' || github.ref_name == 'hmg')
+      - name: Disparar promoção automática (dev->prod)
+        # Só em push (não em PR) e só na branch dev. O workflow_run como
+        # gatilho pra isso se mostrou pouco confiável neste ambiente (fires
+        # instantaneamente, sem esperar este job terminar) — chamar
+        # workflow_dispatch explicitamente aqui é o jeito documentado e
+        # confiável de um workflow disparar outro.
+        if: github.event_name == 'push' && github.ref_name == 'dev'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          if [ "${{ github.ref_name }}" = "dev" ]; then DESTINO="hmg"; else DESTINO="prod"; fi
-          gh workflow run promote.yml --ref "${{ github.ref_name }}" -f destino="$DESTINO"
+        run: gh workflow run promote.yml --ref dev

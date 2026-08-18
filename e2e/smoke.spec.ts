@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 /**
- * Smoke tests contra um ambiente já implantado (hmg ou prod), rodados depois
+ * Smoke tests contra um ambiente já implantado (dev ou prod), rodados depois
  * do deploy como parte do gate de promoção. Não usam credenciais — só
  * verificam que as páginas públicas carregam e que a proteção de rotas e os
  * cabeçalhos de segurança realmente chegam ao navegador em produção, não só
