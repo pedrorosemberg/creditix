@@ -156,9 +156,19 @@ para nunca haver ambiguidade sobre qual ambiente um usuário está acessando.
   específico daquele commit terminou com sucesso (exigiria `VERCEL_TOKEN` + IDs de projeto/time como
   secrets adicionais). A verificação pós-deploy com espera fixa (90s) é uma aproximação razoável, não uma
   garantia.
-- **Piso de performance do Lighthouse mais exigente**: começou conservador (0.5) por falta de uma série
-  histórica real contra `hmg`/`prod` — suba `LIGHTHOUSE_MIN_PERFORMANCE` depois de observar algumas
-  execuções.
+- **Piso de performance do Lighthouse**: calibrado em 0.3 a partir da primeira execução real (0.39 contra
+  `creditix-dev.metadax.com.br`) — suba `LIGHTHOUSE_MIN_PERFORMANCE` conforme mais execuções acumularem
+  histórico.
 - **Testes E2E autenticados**: os smoke tests Playwright hoje só cobrem rotas públicas (login, cadastro,
   redirecionamento) porque não há uma conta de teste dedicada configurada — criar uma e passar as
   credenciais via secret ampliaria a cobertura para o dashboard, dívidas, etc.
+- **Cloudflare interfere com o smoke E2E (Playwright)**: `DEV_BASE_URL`/`HMG_BASE_URL`, se apontarem para
+  um subdomínio atrás do Cloudflare (ex.: `creditix-dev.metadax.com.br`), têm o Rocket Loader/proteção
+  contra bots do Cloudflare reescrevendo e adiando os `<script>` da página — confirmado na primeira
+  execução real: o HTML bruto (via `curl`/fetch simples) tem o formulário de login perfeitamente correto,
+  mas o Chromium headless do Playwright não encontra os campos a tempo. Não é um bug do app. Duas saídas:
+  (a) aponte `DEV_BASE_URL`/`HMG_BASE_URL` para o alias `*.vercel.app` do mesmo deploy (não passa pelo
+  Cloudflare) só para esses checks automatizados, mantendo o domínio custom pra uso humano normal; ou
+  (b) ajuste as regras do Cloudflare (Rocket Loader / Bot Fight Mode) pra não interferir no user-agent do
+  GitHub Actions runner. Nenhuma das duas foi feita ainda — o job `funcionalidade-e2e` (e `eficiencia`,
+  que também depende de JS carregando corretamente) não são status checks obrigatórios ainda por isso.
