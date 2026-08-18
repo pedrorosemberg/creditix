@@ -10,6 +10,7 @@ import {
   LifeBuoy,
   Bell,
   Settings,
+  MessageCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +20,7 @@ const ITEMS = [
   { href: "/transacoes", label: "Transações", icon: ArrowLeftRight },
   { href: "/orcamento", label: "Orçamento", icon: Wallet },
   { href: "/recuperacao", label: "Recuperação financeira", icon: LifeBuoy },
+  { href: "/chat", label: "Chat com IA", icon: MessageCircle },
   { href: "/lembretes", label: "Lembretes", icon: Bell },
   { href: "/configuracoes", label: "Configurações", icon: Settings },
 ];

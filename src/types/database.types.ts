@@ -21,6 +21,7 @@ export type ModalidadePagamentoDb = "avista" | "parcelado";
 export type StatusPlanoDb = "simulado" | "proposto" | "aceito" | "recusado";
 export type ProvedorIaDb = "ollama" | "gemini" | "local";
 export type FrequenciaLembreteDb = "semanal" | "quinzenal" | "mensal";
+export type PapelMensagemChatDb = "usuario" | "assistente";
 
 export type Profile = {
   id: string;
@@ -152,6 +153,16 @@ export type EmailEvent = {
   created_at: string;
 };
 
+export type AiChatMessage = {
+  id: string;
+  user_id: string;
+  role: PapelMensagemChatDb;
+  content: string;
+  provider: ProvedorIaDb | null;
+  model: string | null;
+  created_at: string;
+};
+
 type TableDef<Row, Insert, Update = Partial<Insert>> = {
   Row: Row;
   Insert: Insert;
@@ -198,6 +209,10 @@ export type Database = {
       email_events: TableDef<
         EmailEvent,
         Omit<EmailEvent, "id" | "created_at"> & { id?: string }
+      >;
+      ai_chat_messages: TableDef<
+        AiChatMessage,
+        Omit<AiChatMessage, "id" | "created_at"> & { id?: string }
       >;
     };
     Views: Record<string, never>;
