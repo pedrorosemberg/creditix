@@ -111,6 +111,25 @@ jobs:
           fi
           echo "numero=$NUMERO" >> "$GITHUB_OUTPUT"
 
+      - name: Disparar Test Suite explicitamente
+        # O evento pull_request do GitHub às vezes não dispara quando a PR é
+        # aberta pra um branch cujo commit já existia antes (o GitHub
+        # reaproveita o check suite criado pelo push anterior e nunca chega
+        # a reavaliar o gatilho pull_request contra ele) — confirmado na
+        # prática na primeira execução real desta esteira. Disparar aqui
+        # explicitamente garante que os checks obrigatórios (seguranca,
+        # cloud, ...) sempre rodem, independentemente desse comportamento.
+        if: steps.classificacao.outputs.label != ''
+        env:
+          GH_TOKEN: ${{ secrets.PROMOTE_PAT }}
+          ORIGEM: ${{ steps.branches.outputs.origem }}
+          DESTINO: ${{ steps.branches.outputs.destino }}
+          LABEL: ${{ steps.classificacao.outputs.label }}
+        run: |
+          URGENTE="false"
+          [ "$LABEL" = "criticidade:hotfix" ] && URGENTE="true"
+          gh workflow run test-suite.yml --ref "$ORIGEM" -f destino="$DESTINO" -f urgente="$URGENTE"
+
       - name: Ligar auto-merge
         if: steps.classificacao.outputs.label != ''
         env:

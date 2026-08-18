@@ -13,11 +13,31 @@ name: Test Suite (promoção dev→hmg→prod)
 # (escalabilidade, eficiência, funcionalidade end-to-end) são pulados — só
 # os gates rápidos e nunca-puláveis (segurança, saúde do deploy) continuam
 # obrigatórios. Uma feature nova sempre passa pela suíte completa.
+#
+# Além do gatilho pull_request (o caminho normal), promote.yml também
+# dispara este workflow explicitamente via workflow_dispatch logo depois de
+# abrir a PR — descobrimos na prática que o evento pull_request às vezes não
+# dispara quando a PR é aberta via API para um branch cujo SHA já existia
+# (o GitHub reaproveita o check suite criado pelo push anterior e nunca
+# reavalia o gatilho pull_request contra ele). O workflow_dispatch roda
+# contra o mesmo commit (checkout do branch de origem) e os check runs
+# resultantes contam pros status checks obrigatórios da PR normalmente.
 
 on:
   pull_request:
     branches: [hmg, prod]
   workflow_dispatch:
+    inputs:
+      destino:
+        description: "Ambiente de destino (hmg ou prod) — só usado quando disparado manualmente/pelo promote.yml, não numa PR real"
+        required: false
+        type: choice
+        options: [hmg, prod]
+      urgente:
+        description: "Pular os gates lentos (mesma classificação já feita pelo promote.yml)"
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: test-suite-${{ github.workflow }}-${{ github.ref }}
@@ -33,13 +53,18 @@ jobs:
       - id: check
         env:
           LABELS_JSON: ${{ toJSON(github.event.pull_request.labels) }}
-          BASE_REF: ${{ github.base_ref }}
+          BASE_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.destino || github.base_ref }}
+          URGENTE_INPUT: ${{ inputs.urgente }}
         run: |
-          URGENTE=$(node -e "
-            const labels = JSON.parse(process.env.LABELS_JSON || '[]');
-            const nomes = labels.map((l) => l.name.toLowerCase());
-            console.log(nomes.includes('hotfix') || nomes.includes('emergencial'));
-          ")
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            URGENTE="$URGENTE_INPUT"
+          else
+            URGENTE=$(node -e "
+              const labels = JSON.parse(process.env.LABELS_JSON || '[]');
+              const nomes = labels.map((l) => l.name.toLowerCase());
+              console.log(nomes.includes('hotfix') || nomes.includes('emergencial'));
+            ")
+          fi
           echo "urgente=$URGENTE" >> "$GITHUB_OUTPUT"
           # O que testamos é sempre o ambiente que JÁ contém o candidato desta
           # PR, não o destino (que ainda não recebeu o merge). Numa PR

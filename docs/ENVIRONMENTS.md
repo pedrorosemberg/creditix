@@ -87,8 +87,12 @@ que a PR que ele abre e o merge que ele faz disparem o `Test Suite` e o deploy n
 
 ### 2. Habilite "Allow auto-merge" no repositório
 
-**Settings → General → Pull Requests → Allow auto-merge**. Sem isso, `gh pr merge --auto` falha
-silenciosamente (a PR fica esperando para sempre).
+**Settings → General → Pull Requests → Allow auto-merge**. Sem isso, `gh pr merge --auto` falha com
+`GraphQL: Auto merge is not allowed for this repository` (confirmado na primeira execução real).
+
+**Importante:** essa opção sozinha não basta — o GitHub também exige que a branch de destino tenha
+proteção de branch com status checks obrigatórios configurados (passo 3 abaixo) antes de aceitar
+auto-merge. Configure os dois na ordem: primeiro a proteção de branch, depois "Allow auto-merge".
 
 ### 3. Proteção de branch (`hmg` e `prod`)
 
