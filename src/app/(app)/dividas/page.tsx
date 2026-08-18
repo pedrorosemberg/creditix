@@ -5,16 +5,7 @@ import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatarData, formatarMoeda } from "@/lib/utils";
-import type { Debt } from "@/types/database.types";
-
-const STATUS_LABEL: Record<Debt["status"], string> = {
-  ativa: "Ativa",
-  negociando: "Negociando",
-  acordo_fechado: "Acordo fechado",
-  quitada: "Quitada",
-  contestada: "Contestada",
-  em_processo_judicial: "Em processo judicial",
-};
+import { STATUS_DIVIDA_LABEL } from "@/lib/constants/labels";
 
 export default async function DividasPage() {
   const supabase = await createClient();
@@ -74,7 +65,7 @@ export default async function DividasPage() {
                   <td className="px-4 py-3 font-medium">{formatarMoeda(Number(d.valor_atual))}</td>
                   <td className="px-4 py-3">
                     <Badge tone={d.status === "quitada" ? "success" : "neutral"}>
-                      {STATUS_LABEL[d.status]}
+                      {STATUS_DIVIDA_LABEL[d.status]}
                     </Badge>
                   </td>
                 </tr>

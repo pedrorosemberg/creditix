@@ -4,13 +4,8 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { DeleteIconButton } from "@/components/ui/delete-icon-button";
 import { Field, Input, Label, Select } from "@/components/ui/input";
 import { formatarData, formatarMoeda } from "@/lib/utils";
+import { TIPO_TRANSACAO_LABEL } from "@/lib/constants/labels";
 import { criarTransacaoAction, excluirTransacaoAction } from "./actions";
-
-const TIPO_LABEL: Record<string, string> = {
-  receita: "Receita",
-  despesa: "Despesa",
-  pagamento_divida: "Pagamento de dívida",
-};
 
 export default async function TransacoesPage() {
   const supabase = await createClient();
@@ -89,7 +84,7 @@ export default async function TransacoesPage() {
               <tr key={t.id} className="border-b border-border last:border-0 hover:bg-surface-muted">
                 <td className="px-4 py-3 text-foreground-muted">{formatarData(t.data)}</td>
                 <td className="px-4 py-3">{t.descricao}</td>
-                <td className="px-4 py-3 text-foreground-muted">{TIPO_LABEL[t.tipo]}</td>
+                <td className="px-4 py-3 text-foreground-muted">{TIPO_TRANSACAO_LABEL[t.tipo]}</td>
                 <td
                   className={
                     "px-4 py-3 font-medium " + (t.tipo === "receita" ? "text-success" : "text-danger")

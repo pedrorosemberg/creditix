@@ -13,3 +13,7 @@ export function VeredictoBadge({ veredicto }: { veredicto: VeredictoJuros }) {
   const { label, tone } = CONFIG[veredicto];
   return <Badge tone={tone}>{label}</Badge>;
 }
+
+export function veredictoLabel(veredicto: VeredictoJuros): string {
+  return CONFIG[veredicto].label;
+}
