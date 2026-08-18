@@ -61,6 +61,11 @@ suíte completa rode de fato.
 
 ## Configurando a promoção automática (uma vez, manualmente)
 
+**Status atual desta instância:** `PROMOTE_PAT`, `DEV_BASE_URL`, `HMG_BASE_URL` e `PROD_BASE_URL` já estão
+configurados — a promoção dev→hmg→prod roda de ponta a ponta sem intervenção manual. `NEXT_PUBLIC_GRAFANA_FARO_URL`
+(observabilidade opcional, ver `docs/OBSERVABILIDADE.md`) ainda não foi configurada — sem ela, o app
+funciona normalmente, só sem o Grafana Faro.
+
 ### 1. Crie o secret `PROMOTE_PAT`
 
 O GitHub não dispara outros workflows a partir de um push/PR feito com o `GITHUB_TOKEN` padrão de um
