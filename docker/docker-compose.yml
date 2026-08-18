@@ -1,0 +1,147 @@
+name: creditix
+
+# Stack self-hosted mínimo: Postgres + Auth (GoTrue) + REST (PostgREST) +
+# gateway (Caddy) + Ollama (IA local) + a aplicação Next.js.
+#
+# As tags de imagem abaixo usam ":latest" de propósito para garantir que o
+# `docker compose pull` sempre funcione neste template. Antes de colocar em
+# produção, confira as tags estáveis mais recentes em hub.docker.com para
+# supabase/postgres, supabase/gotrue e postgrest/postgrest e fixe versões
+# específicas (evita quebras inesperadas em updates automáticos).
+#
+# Antes do primeiro "docker compose up": copie docker/.env.example para
+# docker/.env e gere os segredos com `node ../scripts/generate-jwt-keys.mjs`.
+
+services:
+  db:
+    image: supabase/postgres:latest
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+      JWT_SECRET: ${JWT_SECRET}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [creditix]
+
+  auth:
+    image: supabase/gotrue:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@db:5432/postgres
+      GOTRUE_SITE_URL: ${APP_URL}
+      GOTRUE_URI_ALLOW_LIST: ${APP_URL}/**
+      API_EXTERNAL_URL: ${GATEWAY_URL}/auth/v1
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_DISABLE_SIGNUP: "false"
+      # Em produção, prefira exigir confirmação por e-mail (false) e configure
+      # o SMTP abaixo (pode usar smtp.resend.com se você já usa Resend).
+      GOTRUE_MAILER_AUTOCONFIRM: ${GOTRUE_MAILER_AUTOCONFIRM:-true}
+      GOTRUE_SMTP_HOST: ${SMTP_HOST:-}
+      GOTRUE_SMTP_PORT: ${SMTP_PORT:-587}
+      GOTRUE_SMTP_USER: ${SMTP_USER:-}
+      GOTRUE_SMTP_PASS: ${SMTP_PASS:-}
+      GOTRUE_SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL:-admin@example.com}
+      GOTRUE_SMTP_SENDER_NAME: Creditix
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9999/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [creditix]
+
+  migrate:
+    image: postgres:16-alpine
+    depends_on:
+      auth:
+        condition: service_healthy
+    volumes:
+      - ../supabase/migrations:/migrations:ro
+    entrypoint: ["sh", "-c"]
+    command:
+      - >
+        for f in $$(ls /migrations/*.sql | sort); do
+          echo "Aplicando $$f";
+          psql "postgres://postgres:${POSTGRES_PASSWORD}@db:5432/postgres" -v ON_ERROR_STOP=1 -f "$$f" || exit 1;
+        done
+    networks: [creditix]
+
+  rest:
+    image: postgrest/postgrest:latest
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD}@db:5432/postgres
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+    networks: [creditix]
+
+  gateway:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on: [auth, rest]
+    ports:
+      - "${GATEWAY_PORT:-8000}:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    networks: [creditix]
+
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    volumes:
+      - ollama-data:/root/.ollama
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    networks: [creditix]
+
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      gateway:
+        condition: service_started
+    environment:
+      NEXT_PUBLIC_SUPABASE_URL: ${GATEWAY_URL}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+      NEXT_PUBLIC_APP_URL: ${APP_URL}
+      CRON_SECRET: ${CRON_SECRET}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-Creditix <lembretes@creditix.metadax.com.br>}
+      RESEND_WEBHOOK_API_KEY: ${RESEND_WEBHOOK_API_KEY:-}
+      AI_PROVIDER: ${AI_PROVIDER:-ollama}
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
+      LOCAL_MODEL_ID: ${LOCAL_MODEL_ID:-onnx-community/Qwen2.5-0.5B-Instruct}
+      LOCAL_MODEL_MAX_NEW_TOKENS: ${LOCAL_MODEL_MAX_NEW_TOKENS:-350}
+      LOCAL_MODEL_TIMEOUT_MS: ${LOCAL_MODEL_TIMEOUT_MS:-55000}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    networks: [creditix]
+
+networks:
+  creditix:
+
+volumes:
+  db-data:
+  ollama-data:

@@ -1,0 +1,21 @@
+# O Cloud Run já termina o HTTPS na borda (a URL pública é sempre
+# https://...run.app) e repassa a requisição em HTTP simples pro container
+# na porta $PORT — por isso, ao contrário do Caddyfile da variante VM, aqui
+# não precisa de nenhuma configuração de certificado/ACME.
+#
+# Sem Basic Auth aqui de propósito: o controle de acesso é feito pelo
+# próprio Cloud Run via IAM (o serviço fica privado — sem
+# --allow-unauthenticated — e só uma conta de serviço com
+# `roles/run.invoker` consegue chamar). Adicionar Basic Auth aqui em cima
+# quebraria isso: a Vercel manda um token Google (Bearer), não
+# usuário/senha, e as duas coisas não convivem no mesmo header
+# Authorization.
+:{$PORT} {
+	# O Ollama recusa (403) qualquer requisição cujo cabeçalho Host não seja
+	# localhost/127.0.0.1 — proteção própria dele contra DNS rebinding. O
+	# Caddy por padrão repassa o Host original do cliente (o domínio
+	# ...run.app), então precisa reescrever aqui antes de encaminhar.
+	reverse_proxy 127.0.0.1:11434 {
+		header_up Host localhost
+	}
+}

@@ -1,0 +1,47 @@
+name: Promover ambiente
+
+# Disparo manual para abrir a PR de promoção (dev -> hmg ou hmg -> prod).
+# A PR só pode ser mergeada depois que os checks obrigatórios da branch de
+# destino passarem (CI sempre; Security & Load Gate também para prod) —
+# isso é reforçado pela proteção de branch configurada no GitHub, não por
+# este workflow. Veja docs/ENVIRONMENTS.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      destino:
+        description: "Ambiente de destino"
+        required: true
+        type: choice
+        options: [hmg, prod]
+
+jobs:
+  abrir-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Definir origem/destino
+        id: branches
+        run: |
+          if [ "${{ inputs.destino }}" = "hmg" ]; then
+            echo "origem=dev" >> "$GITHUB_OUTPUT"
+          else
+            echo "origem=hmg" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Criar Pull Request de promoção
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ORIGEM: ${{ steps.branches.outputs.origem }}
+          DESTINO: ${{ inputs.destino }}
+        run: |
+          gh pr create \
+            --head "$ORIGEM" \
+            --base "$DESTINO" \
+            --title "Promover $ORIGEM → $DESTINO" \
+            --body "PR automática de promoção de \`$ORIGEM\` para \`$DESTINO\`. Só deve ser mergeada depois que todos os checks obrigatórios passarem." \
+            || echo "Já existe uma PR aberta de $ORIGEM para $DESTINO."
