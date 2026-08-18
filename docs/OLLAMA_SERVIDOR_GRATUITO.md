@@ -29,6 +29,25 @@ o Ollama com um modelo pequeno/médio.
    privada).
 6. Crie a instância e anote o **IP público**.
 
+### Se a cota do A1 (Ampere) estiver bloqueada
+
+É comum a criação da VM A1 falhar com "service limits were exceeded"
+mesmo em contas novas dentro do Always Free — é uma cota que ainda não
+foi liberada pra sua conta, não falta de opção gratuita. Duas saídas:
+
+- Pedir aumento de cota em **Governance & Administration → Limits,
+  Quotas and Usage** (gratuito, mas pode levar um tempo pra aprovar) e
+  tentar de novo mais tarde, ou tentar um shape A1 menor (2 OCPU/12GB)
+  primeiro — algumas contas já vêm com essa cota parcial liberada.
+- Enquanto isso, a Oracle libera **separadamente** (cota própria, não
+  compartilha limite com o A1) até 2 VMs `VM.Standard.E2.1.Micro` (AMD,
+  1 OCPU, **1GB de RAM**) — geralmente disponível na hora. É pouca RAM
+  pra um modelo grande, mas roda um modelo bem pequeno
+  (`qwen2.5:0.5b`) como solução provisória. Essa variante normalmente
+  vem com **Oracle Linux** em vez de Ubuntu — usuário SSH `opc` (não
+  `ubuntu`) e firewall `firewalld` em vez de `iptables` direto. As
+  próximas seções trazem o comando equivalente pros dois casos.
+
 ## 2. Abrir as portas 80 e 443
 
 A Oracle bloqueia tudo por padrão em duas camadas — as duas precisam ser
@@ -38,22 +57,45 @@ ajustadas:
   rede) → Security Lists → Default Security List → Add Ingress Rules:
   - Source `0.0.0.0/0`, porta `80` (TCP)
   - Source `0.0.0.0/0`, porta `443` (TCP)
-- **Firewall da própria VM** (Ubuntu usa `iptables`/`netfilter` por
-  padrão, bloqueando mesmo com a security list liberada):
-  ```bash
-  sudo iptables -I INPUT -p tcp --dport 80 -j ACCEPT
-  sudo iptables -I INPUT -p tcp --dport 443 -j ACCEPT
-  sudo netfilter-persistent save   # ou: sudo apt install iptables-persistent
-  ```
+- **Firewall da própria VM** (bloqueia mesmo com a security list
+  liberada):
+  - Ubuntu (`iptables`/`netfilter` por padrão):
+    ```bash
+    sudo iptables -I INPUT -p tcp --dport 80 -j ACCEPT
+    sudo iptables -I INPUT -p tcp --dport 443 -j ACCEPT
+    sudo netfilter-persistent save   # ou: sudo apt install iptables-persistent
+    ```
+  - Oracle Linux (`firewalld` por padrão):
+    ```bash
+    sudo firewall-cmd --permanent --add-port=80/tcp
+    sudo firewall-cmd --permanent --add-port=443/tcp
+    sudo firewall-cmd --reload
+    ```
 
 ## 3. Instalar Docker
 
-Conecte via SSH (`ssh ubuntu@<ip-publico>`) e rode:
+Conecte via SSH — `ssh ubuntu@<ip-publico>` (Ubuntu) ou
+`ssh opc@<ip-publico>` (Oracle Linux) — e rode:
 
 ```bash
 curl -fsSL https://get.docker.com | sudo sh
 sudo usermod -aG docker $USER
 # saia e reconecte via SSH para o grupo "docker" valer
+```
+
+### Se a VM tiver só 1GB de RAM (shape E2.1.Micro)
+
+Adicione um swap file antes de subir o stack — sem isso, o Docker ou o
+Ollama pode morrer por falta de memória (OOM) mesmo com um modelo
+pequeno:
+
+```bash
+sudo fallocate -l 4G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+free -h   # confirma que o swap apareceu
 ```
 
 ## 4. Subir o Ollama
@@ -71,7 +113,8 @@ docker run --rm caddy:2-alpine caddy hash-password --plaintext 'escolha-uma-senh
 # cole o resultado em BASIC_AUTH_HASH no .env
 
 docker compose up -d
-docker compose exec ollama ollama pull llama3.1
+docker compose exec ollama ollama pull llama3.1   # VM com 24GB de RAM (A1)
+# docker compose exec ollama ollama pull qwen2.5:0.5b   # VM com só 1GB de RAM (E2.1.Micro)
 ```
 
 O primeiro acesso ao domínio pode levar alguns segundos enquanto o Caddy
