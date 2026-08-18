@@ -15,6 +15,7 @@ import {
   FileBarChart,
   LineChart,
   Building2,
+  Gift,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OPERADOR } from "@/lib/config/operador";
@@ -30,6 +31,7 @@ const ITEMS = [
   { href: "/relatorios", label: "Relatórios", icon: FileBarChart },
   { href: "/chat", label: "Chat com IA", icon: MessageCircle },
   { href: "/lembretes", label: "Lembretes", icon: Bell },
+  { href: "/convite", label: "Convite", icon: Gift },
   { href: "/logs", label: "Logs", icon: ScrollText },
   { href: "/configuracoes", label: "Configurações", icon: Settings },
 ];

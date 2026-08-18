@@ -1,15 +1,6 @@
 import "server-only";
 import { createAdminClient } from "./admin";
-
-/**
- * URL pública da aplicação, usada em todo link de autenticação enviado
- * por e-mail. "||" (não "??") é proposital: em alguns ambientes a
- * variável chega como string vazia, não undefined/null, e "??" não cai
- * no fallback nesse caso — já nos mordeu uma vez no build da Vercel.
- */
-export function urlPublicaApp(): string {
-  return process.env.NEXT_PUBLIC_APP_URL || "https://creditix.metadax.com.br";
-}
+import { urlPublicaApp } from "@/lib/utils";
 
 type TipoLink = "signup" | "recovery" | "magiclink";
 
@@ -40,7 +31,7 @@ export async function gerarLinkAuth(params: {
   password?: string;
   redirectPath: string;
   displayName?: string;
-}): Promise<string> {
+}): Promise<{ link: string; userId: string }> {
   const admin = createAdminClient();
   const redirectTo = `${urlPublicaApp()}/auth/callback?next=${encodeURIComponent(params.redirectPath)}`;
   const options = {
@@ -58,15 +49,18 @@ export async function gerarLinkAuth(params: {
         })
       : await admin.auth.admin.generateLink({ type: params.type, email: params.email, options });
 
-  if (resultado.error || !resultado.data?.properties?.hashed_token) {
+  if (resultado.error || !resultado.data?.properties?.hashed_token || !resultado.data.user) {
     throw resultado.error ?? new Error("Não foi possível gerar o link de autenticação.");
   }
 
-  return montarLinkConfirmacao({
-    tokenHash: resultado.data.properties.hashed_token,
-    type: params.type,
-    next: params.redirectPath,
-  });
+  return {
+    link: montarLinkConfirmacao({
+      tokenHash: resultado.data.properties.hashed_token,
+      type: params.type,
+      next: params.redirectPath,
+    }),
+    userId: resultado.data.user.id,
+  };
 }
 
 /**

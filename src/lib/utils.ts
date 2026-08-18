@@ -5,6 +5,17 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * URL pública da aplicação, usada em todo link enviado por e-mail ou
+ * compartilhado (auth, indicação). "||" (não "??") é proposital: em
+ * alguns ambientes a variável chega como string vazia, não
+ * undefined/null, e "??" não cai no fallback nesse caso — já nos mordeu
+ * uma vez no build da Vercel.
+ */
+export function urlPublicaApp(): string {
+  return process.env.NEXT_PUBLIC_APP_URL || "https://creditix.metadax.com.br";
+}
+
 export function formatarMoeda(valor: number | null | undefined): string {
   if (valor === null || valor === undefined || Number.isNaN(valor)) return "—";
   return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });

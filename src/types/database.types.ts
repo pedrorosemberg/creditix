@@ -36,8 +36,21 @@ export type Profile = {
   lembrete_dividas: boolean;
   lembrete_contas: boolean;
   lembrete_preencher_transacoes: boolean;
+  referral_code: string;
   created_at: string;
   updated_at: string;
+};
+
+export type StatusIndicacaoDb = "pendente" | "aceito";
+
+export type Referral = {
+  id: string;
+  referrer_id: string;
+  referred_user_id: string | null;
+  codigo: string;
+  status: StatusIndicacaoDb;
+  created_at: string;
+  aceito_at: string | null;
 };
 
 export type Debt = {
@@ -245,8 +258,17 @@ export type Database = {
         ActivityLog,
         Omit<ActivityLog, "id" | "created_at"> & { id?: string }
       >;
+      referrals: TableDef<
+        Referral,
+        Omit<Referral, "id" | "created_at" | "aceito_at"> & { id?: string; aceito_at?: string | null }
+      >;
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      minhas_indicacoes: {
+        Args: Record<string, never>;
+        Returns: { pendentes: number; aceitos: number; quitando_dividas: number }[];
+      };
+    };
   };
 };

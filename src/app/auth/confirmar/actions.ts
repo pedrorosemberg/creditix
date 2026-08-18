@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { confirmarIndicacaoAceita } from "@/lib/supabase/referrals";
 
 const schema = z.object({
   token_hash: z.string().min(1),
@@ -31,11 +32,15 @@ export async function confirmarLinkAuthAction(formData: FormData) {
   if (!parsed.success) redirect("/auth/confirmar/erro");
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.verifyOtp({
+  const { data, error } = await supabase.auth.verifyOtp({
     token_hash: parsed.data.token_hash,
     type: parsed.data.type,
   });
   if (error) redirect("/auth/confirmar/erro");
+
+  if (parsed.data.type === "signup" && data.user) {
+    await confirmarIndicacaoAceita(data.user.id);
+  }
 
   redirect(parsed.data.next);
 }
