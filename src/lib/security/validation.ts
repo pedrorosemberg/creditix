@@ -43,17 +43,27 @@ export const bankAccountSchema = z.object({
   observacoes: z.string().trim().max(1000).optional().or(z.literal("")),
 });
 
+export const recorrenciaSchema = z.enum([
+  "unica",
+  "diaria",
+  "semanal",
+  "quinzenal",
+  "mensal",
+  "semestral",
+  "anual",
+]);
+
 export const incomeSchema = z.object({
   descricao: z.string().trim().min(2).max(200),
   valor: z.coerce.number().min(0).max(999_999_999),
-  recorrencia: z.enum(["mensal", "unica"]).default("mensal"),
+  recorrencia: recorrenciaSchema.default("mensal"),
 });
 
 export const expenseSchema = z.object({
   descricao: z.string().trim().min(2).max(200),
   categoria: z.string().trim().min(1).max(100).default("outros"),
   valor: z.coerce.number().min(0).max(999_999_999),
-  recorrencia: z.enum(["mensal", "unica"]).default("mensal"),
+  recorrencia: recorrenciaSchema.default("mensal"),
   dia_vencimento: z.coerce.number().int().min(1).max(31).optional(),
   essencial: z.coerce.boolean().default(true),
 });
@@ -65,7 +75,11 @@ export const transactionSchema = z.object({
   valor: z.coerce.number().min(0).max(999_999_999),
   data: z.string().date(),
   debt_id: z.string().uuid().optional().or(z.literal("")),
-  recorrente: z.coerce.boolean().default(false),
+  recorrencia: recorrenciaSchema.default("unica"),
+  // Só usados quando recorrencia !== "unica" e tipo === "despesa" — a
+  // transação também alimenta o gasto correspondente no Orçamento.
+  dia_vencimento: z.coerce.number().int().min(1).max(31).optional(),
+  essencial: z.coerce.boolean().default(true),
 });
 
 export const profileSchema = z.object({

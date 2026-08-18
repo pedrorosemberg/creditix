@@ -1,6 +1,7 @@
 import type { createClient } from "@/lib/supabase/server";
 import { analisarDivida } from "@/lib/legal/analisar-divida";
 import { montarPlanoRecuperacao } from "@/lib/finance/recovery-plan";
+import { somaMensalEquivalente } from "@/lib/finance/periodicidade";
 import type { PlanoRecuperacao } from "@/lib/finance/tipos";
 import type { VeredictoJuros } from "@/lib/legal/tipos";
 import type { Debt, Transaction } from "@/types/database.types";
@@ -65,14 +66,12 @@ export async function obterDadosRelatorio(
   if (incluirRecuperacao) {
     const [{ data: dividasAtivas }, { data: incomes }, { data: expenses }] = await Promise.all([
       supabase.from("debts").select("*").in("status", ["ativa", "negociando", "contestada"]),
-      supabase.from("incomes").select("valor"),
-      supabase.from("expenses").select("valor, essencial"),
+      supabase.from("incomes").select("valor, recorrencia"),
+      supabase.from("expenses").select("valor, recorrencia, essencial"),
     ]);
 
-    const rendaMensal = (incomes ?? []).reduce((acc, i) => acc + Number(i.valor), 0);
-    const gastosEssenciais = (expenses ?? [])
-      .filter((e) => e.essencial)
-      .reduce((acc, e) => acc + Number(e.valor), 0);
+    const rendaMensal = somaMensalEquivalente(incomes ?? []);
+    const gastosEssenciais = somaMensalEquivalente((expenses ?? []).filter((e) => e.essencial));
 
     const dividasParaPlano = (dividasAtivas ?? []).map((d) => {
       const { analise } = analisarDivida(d);

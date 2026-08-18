@@ -1,11 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { expenseSchema, incomeSchema, uuidSchema } from "@/lib/security/validation";
 
-export async function criarRendaAction(formData: FormData) {
+/**
+ * Renda e gasto recorrentes nascem em Transações (sincronizarOrcamento) —
+ * aqui só cabe editar o que já existe (corrigir valor/recorrência/nome) ou
+ * excluir. Ter um segundo formulário de criação aqui reabriria a
+ * duplicidade que a centralização em Transações resolveu.
+ */
+export async function atualizarRendaAction(id: string, formData: FormData) {
+  const rendaId = uuidSchema.parse(id);
   const dados = incomeSchema.parse({
     descricao: formData.get("descricao"),
     valor: formData.get("valor"),
@@ -13,13 +19,8 @@ export async function criarRendaAction(formData: FormData) {
   });
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { error } = await supabase.from("incomes").insert({ ...dados, user_id: user.id });
-  if (error) throw new Error("Não foi possível salvar a renda.");
+  const { error } = await supabase.from("incomes").update(dados).eq("id", rendaId);
+  if (error) throw new Error("Não foi possível atualizar a renda.");
   revalidatePath("/orcamento");
   revalidatePath("/recuperacao");
   revalidatePath("/dashboard");
@@ -34,7 +35,8 @@ export async function excluirRendaAction(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
-export async function criarGastoAction(formData: FormData) {
+export async function atualizarGastoAction(id: string, formData: FormData) {
+  const gastoId = uuidSchema.parse(id);
   const dados = expenseSchema.parse({
     descricao: formData.get("descricao"),
     categoria: formData.get("categoria") || "outros",
@@ -45,17 +47,11 @@ export async function criarGastoAction(formData: FormData) {
   });
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { error } = await supabase.from("expenses").insert({
-    ...dados,
-    dia_vencimento: dados.dia_vencimento ?? null,
-    user_id: user.id,
-  });
-  if (error) throw new Error("Não foi possível salvar o gasto.");
+  const { error } = await supabase
+    .from("expenses")
+    .update({ ...dados, dia_vencimento: dados.dia_vencimento ?? null })
+    .eq("id", gastoId);
+  if (error) throw new Error("Não foi possível atualizar o gasto.");
   revalidatePath("/orcamento");
   revalidatePath("/recuperacao");
   revalidatePath("/dashboard");

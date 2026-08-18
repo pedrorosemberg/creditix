@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Debt, Expense } from "@/types/database.types";
 import { formatarMoeda } from "@/lib/utils";
+import { RECORRENCIA_LABEL, valorMensalEquivalente } from "@/lib/finance/periodicidade";
 
 export type PreferenciasLembrete = {
   lembreteDividas: boolean;
@@ -27,7 +28,7 @@ export async function obterItensLembrete(
       ? supabase.from("debts").select("*").eq("user_id", userId).in("status", ["ativa", "negociando", "contestada"])
       : Promise.resolve({ data: [] as Debt[] }),
     prefs.lembreteContas
-      ? supabase.from("expenses").select("*").eq("user_id", userId).eq("recorrencia", "mensal")
+      ? supabase.from("expenses").select("*").eq("user_id", userId).neq("recorrencia", "unica")
       : Promise.resolve({ data: [] as Expense[] }),
     prefs.lembretePreencherTransacoes
       ? supabase.from("transactions").select("data").eq("user_id", userId).order("data", { ascending: false }).limit(1)
@@ -69,9 +70,13 @@ export function renderLembreteHtml(params: {
   const linhasGastos = itens.gastosMensais
     .map(
       (g) =>
-        `<tr><td style="padding:8px 0;border-bottom:1px solid #e3e5e9">${g.descricao}${g.dia_vencimento ? ` (dia ${g.dia_vencimento})` : ""}</td><td style="padding:8px 0;border-bottom:1px solid #e3e5e9;text-align:right;font-weight:600">${formatarMoeda(Number(g.valor))}</td></tr>`,
+        `<tr><td style="padding:8px 0;border-bottom:1px solid #e3e5e9">${g.descricao}${g.dia_vencimento ? ` (dia ${g.dia_vencimento})` : ""} — ${RECORRENCIA_LABEL[g.recorrencia]}</td><td style="padding:8px 0;border-bottom:1px solid #e3e5e9;text-align:right;font-weight:600">${formatarMoeda(Number(g.valor))}</td></tr>`,
     )
     .join("");
+  const totalGastosMensal = itens.gastosMensais.reduce(
+    (acc, g) => acc + valorMensalEquivalente(Number(g.valor), g.recorrencia),
+    0,
+  );
 
   return `
   <div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:0 auto;color:#1e1e1e">
@@ -97,8 +102,9 @@ export function renderLembreteHtml(params: {
 
     ${
       itens.gastosMensais.length > 0
-        ? `<h2 style="font-size:15px;color:#DC2626;margin-top:20px">Contas fixas do mês</h2>
-           <table style="width:100%;border-collapse:collapse;font-size:14px">${linhasGastos}</table>`
+        ? `<h2 style="font-size:15px;color:#DC2626;margin-top:20px">Contas fixas</h2>
+           <table style="width:100%;border-collapse:collapse;font-size:14px">${linhasGastos}</table>
+           <p style="margin:6px 0 0;font-size:13px;color:#5b5f66">Equivalente mensal somado: <strong>${formatarMoeda(totalGastosMensal)}</strong></p>`
         : ""
     }
 

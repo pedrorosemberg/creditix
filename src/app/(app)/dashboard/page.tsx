@@ -4,21 +4,20 @@ import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { VeredictoBadge } from "@/components/dividas/veredicto-badge";
 import { analisarDivida } from "@/lib/legal/analisar-divida";
 import { formatarMoeda } from "@/lib/utils";
+import { somaMensalEquivalente } from "@/lib/finance/periodicidade";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
   const [{ data: dividas }, { data: incomes }, { data: expenses }] = await Promise.all([
     supabase.from("debts").select("*"),
-    supabase.from("incomes").select("valor"),
-    supabase.from("expenses").select("valor, essencial"),
+    supabase.from("incomes").select("valor, recorrencia"),
+    supabase.from("expenses").select("valor, recorrencia, essencial"),
   ]);
 
   const totalDividaOriginal = (dividas ?? []).reduce((acc, d) => acc + Number(d.valor_original), 0);
   const totalDividaAtual = (dividas ?? []).reduce((acc, d) => acc + Number(d.valor_atual), 0);
-  const totalRenda = (incomes ?? []).reduce((acc, i) => acc + Number(i.valor), 0);
-  const totalEssenciais = (expenses ?? [])
-    .filter((e) => e.essencial)
-    .reduce((acc, e) => acc + Number(e.valor), 0);
+  const totalRenda = somaMensalEquivalente(incomes ?? []);
+  const totalEssenciais = somaMensalEquivalente((expenses ?? []).filter((e) => e.essencial));
 
   const analises = (dividas ?? []).map((d) => ({ divida: d, ...analisarDivida(d) }));
   const alertas = analises.filter((a) =>

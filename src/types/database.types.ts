@@ -15,7 +15,7 @@ export type StatusDividaDb =
   | "quitada"
   | "contestada"
   | "em_processo_judicial";
-export type RecorrenciaDb = "mensal" | "unica";
+export type RecorrenciaDb = "unica" | "diaria" | "semanal" | "quinzenal" | "mensal" | "semestral" | "anual";
 export type TipoTransacaoDb = "receita" | "despesa" | "pagamento_divida";
 export type ModalidadePagamentoDb = "avista" | "parcelado";
 export type StatusPlanoDb = "simulado" | "proposto" | "aceito" | "recusado";
@@ -108,7 +108,7 @@ export type Transaction = {
   tipo: TipoTransacaoDb;
   valor: number;
   data: string;
-  recorrente: boolean;
+  recorrencia: RecorrenciaDb;
   created_at: string;
   updated_at: string;
 };

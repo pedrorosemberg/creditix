@@ -4,7 +4,9 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { Field, Input, Label, Select } from "@/components/ui/input";
 import { formatarMoeda } from "@/lib/utils";
 import { obterItensLembrete } from "@/lib/email/lembrete-mensal";
-import { atualizarLembreteAction } from "./actions";
+import { RECORRENCIA_LABEL } from "@/lib/finance/periodicidade";
+import { atualizarLembreteAction, enviarLembreteTesteAction } from "./actions";
+import { TestarLembreteButton } from "./testar-lembrete-button";
 
 const DIAS_SEMANA = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
@@ -149,13 +151,13 @@ export default async function LembretesPage() {
             )}
             {itens.gastosMensais.length > 0 && (
               <div>
-                <p className="mb-1 text-sm font-medium">Contas fixas do mês</p>
+                <p className="mb-1 text-sm font-medium">Contas fixas</p>
                 <ul className="divide-y divide-border text-sm">
                   {itens.gastosMensais.map((g) => (
                     <li key={g.id} className="flex justify-between py-1.5">
                       <span>
                         {g.descricao}
-                        {g.dia_vencimento ? ` (dia ${g.dia_vencimento})` : ""}
+                        {g.dia_vencimento ? ` (dia ${g.dia_vencimento})` : ""} · {RECORRENCIA_LABEL[g.recorrencia]}
                       </span>
                       <span className="font-medium">{formatarMoeda(Number(g.valor))}</span>
                     </li>
@@ -165,6 +167,17 @@ export default async function LembretesPage() {
             )}
           </div>
         )}
+      </Card>
+
+      <Card>
+        <CardTitle>Testar envio agora</CardTitle>
+        <CardDescription>
+          Dispara pra você mesmo, na hora, o e-mail que o cron diário enviaria — não conta como o envio do dia nem
+          depende da frequência configurada acima. Útil pra confirmar que o Resend está entregando de verdade.
+        </CardDescription>
+        <div className="mt-4">
+          <TestarLembreteButton action={enviarLembreteTesteAction} />
+        </div>
       </Card>
     </div>
   );

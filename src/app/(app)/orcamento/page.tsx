@@ -1,15 +1,11 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardTitle } from "@/components/ui/card";
-import { SubmitButton } from "@/components/ui/submit-button";
-import { DeleteIconButton } from "@/components/ui/delete-icon-button";
-import { Field, Input, Label, Select } from "@/components/ui/input";
+import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { formatarMoeda } from "@/lib/utils";
-import {
-  criarGastoAction,
-  criarRendaAction,
-  excluirGastoAction,
-  excluirRendaAction,
-} from "./actions";
+import { somaMensalEquivalente } from "@/lib/finance/periodicidade";
+import { atualizarGastoAction, atualizarRendaAction, excluirGastoAction, excluirRendaAction } from "./actions";
+import { ItemRenda } from "./item-renda";
+import { ItemGasto } from "./item-gasto";
 
 export default async function OrcamentoPage() {
   const supabase = await createClient();
@@ -18,15 +14,23 @@ export default async function OrcamentoPage() {
     supabase.from("expenses").select("*").order("created_at", { ascending: false }),
   ]);
 
-  const totalRenda = (incomes ?? []).reduce((acc, i) => acc + Number(i.valor), 0);
-  const totalGastos = (expenses ?? []).reduce((acc, e) => acc + Number(e.valor), 0);
-  const totalEssenciais = (expenses ?? [])
-    .filter((e) => e.essencial)
-    .reduce((acc, e) => acc + Number(e.valor), 0);
+  const totalRenda = somaMensalEquivalente(incomes ?? []);
+  const totalGastos = somaMensalEquivalente(expenses ?? []);
+  const totalEssenciais = somaMensalEquivalente((expenses ?? []).filter((e) => e.essencial));
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold">Orçamento</h1>
+      <div>
+        <h1 className="text-xl font-semibold">Orçamento</h1>
+        <CardDescription>
+          Renda e gastos recorrentes se cadastram em{" "}
+          <Link href="/transacoes" className="text-brand-red underline">
+            Transações
+          </Link>{" "}
+          — lançar de novo algo com o mesmo nome atualiza o valor aqui em vez de duplicar. Aqui você só edita ou
+          remove o que já existe.
+        </CardDescription>
+      </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
@@ -46,91 +50,38 @@ export default async function OrcamentoPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardTitle>Rendas</CardTitle>
-          <ul className="mt-3 divide-y divide-border">
-            {(incomes ?? []).map((i) => (
-              <li key={i.id} className="flex items-center justify-between py-2 text-sm">
-                <div>
-                  <p className="font-medium">{i.descricao}</p>
-                  <p className="text-xs text-foreground-muted">{i.recorrencia === "mensal" ? "Mensal" : "Única"}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-medium">{formatarMoeda(Number(i.valor))}</span>
-                  <form action={excluirRendaAction}>
-                    <input type="hidden" name="id" value={i.id} />
-                    <DeleteIconButton title="Excluir renda" />
-                  </form>
-                </div>
-              </li>
-            ))}
-          </ul>
-          <form action={criarRendaAction} className="mt-4 grid grid-cols-2 gap-3">
-            <Field label="Descrição" htmlFor="descricao_renda">
-              <Input id="descricao_renda" name="descricao" required />
-            </Field>
-            <Field label="Valor (R$)" htmlFor="valor_renda">
-              <Input id="valor_renda" name="valor" type="number" step="0.01" min="0" required />
-            </Field>
-            <div className="col-span-2">
-              <Label htmlFor="recorrencia_renda">Recorrência</Label>
-              <Select id="recorrencia_renda" name="recorrencia" defaultValue="mensal">
-                <option value="mensal">Mensal</option>
-                <option value="unica">Única</option>
-              </Select>
-            </div>
-            <div className="col-span-2">
-              <SubmitButton size="sm" pendingText="Adicionando...">
-                Adicionar renda
-              </SubmitButton>
-            </div>
-          </form>
+          {(incomes ?? []).length === 0 ? (
+            <CardDescription>Nenhuma renda cadastrada ainda.</CardDescription>
+          ) : (
+            <ul className="mt-3 divide-y divide-border">
+              {(incomes ?? []).map((i) => (
+                <ItemRenda
+                  key={i.id}
+                  renda={i}
+                  atualizarAction={atualizarRendaAction.bind(null, i.id)}
+                  excluirAction={excluirRendaAction}
+                />
+              ))}
+            </ul>
+          )}
         </Card>
 
         <Card>
           <CardTitle>Gastos</CardTitle>
-          <ul className="mt-3 divide-y divide-border">
-            {(expenses ?? []).map((e) => (
-              <li key={e.id} className="flex items-center justify-between py-2 text-sm">
-                <div>
-                  <p className="font-medium">{e.descricao}</p>
-                  <p className="text-xs text-foreground-muted">
-                    {e.categoria} · {e.essencial ? "Essencial" : "Não essencial"}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-medium">{formatarMoeda(Number(e.valor))}</span>
-                  <form action={excluirGastoAction}>
-                    <input type="hidden" name="id" value={e.id} />
-                    <DeleteIconButton title="Excluir gasto" />
-                  </form>
-                </div>
-              </li>
-            ))}
-          </ul>
-          <form action={criarGastoAction} className="mt-4 grid grid-cols-2 gap-3">
-            <Field label="Descrição" htmlFor="descricao_gasto">
-              <Input id="descricao_gasto" name="descricao" required />
-            </Field>
-            <Field label="Valor (R$)" htmlFor="valor_gasto">
-              <Input id="valor_gasto" name="valor" type="number" step="0.01" min="0" required />
-            </Field>
-            <Field label="Categoria" htmlFor="categoria_gasto">
-              <Input id="categoria_gasto" name="categoria" defaultValue="outros" />
-            </Field>
-            <Field label="Dia de vencimento (1-31)" htmlFor="dia_vencimento">
-              <Input id="dia_vencimento" name="dia_vencimento" type="number" min="1" max="31" />
-            </Field>
-            <div className="col-span-2 flex items-center gap-2">
-              <input id="essencial" name="essencial" type="checkbox" defaultChecked className="h-4 w-4" />
-              <Label htmlFor="essencial" className="mb-0">
-                Gasto essencial (moradia, alimentação, saúde...)
-              </Label>
-            </div>
-            <div className="col-span-2">
-              <SubmitButton size="sm" pendingText="Adicionando...">
-                Adicionar gasto
-              </SubmitButton>
-            </div>
-          </form>
+          {(expenses ?? []).length === 0 ? (
+            <CardDescription>Nenhum gasto cadastrado ainda.</CardDescription>
+          ) : (
+            <ul className="mt-3 divide-y divide-border">
+              {(expenses ?? []).map((e) => (
+                <ItemGasto
+                  key={e.id}
+                  gasto={e}
+                  atualizarAction={atualizarGastoAction.bind(null, e.id)}
+                  excluirAction={excluirGastoAction}
+                />
+              ))}
+            </ul>
+          )}
         </Card>
       </div>
     </div>

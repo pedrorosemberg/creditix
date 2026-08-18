@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { montarPlanoRecuperacao } from "@/lib/finance/recovery-plan";
+import { somaMensalEquivalente } from "@/lib/finance/periodicidade";
 import { analisarDivida } from "@/lib/legal/analisar-divida";
 import type { EstrategiaPriorizacao } from "@/lib/finance/tipos";
 
@@ -18,14 +19,12 @@ export async function salvarPlanoAction(formData: FormData) {
 
   const [{ data: dividas }, { data: incomes }, { data: expenses }] = await Promise.all([
     supabase.from("debts").select("*").in("status", ["ativa", "negociando", "contestada"]),
-    supabase.from("incomes").select("valor"),
-    supabase.from("expenses").select("valor, essencial"),
+    supabase.from("incomes").select("valor, recorrencia"),
+    supabase.from("expenses").select("valor, recorrencia, essencial"),
   ]);
 
-  const rendaMensal = (incomes ?? []).reduce((acc, i) => acc + Number(i.valor), 0);
-  const gastosEssenciais = (expenses ?? [])
-    .filter((e) => e.essencial)
-    .reduce((acc, e) => acc + Number(e.valor), 0);
+  const rendaMensal = somaMensalEquivalente(incomes ?? []);
+  const gastosEssenciais = somaMensalEquivalente((expenses ?? []).filter((e) => e.essencial));
 
   const dividasParaPlano = (dividas ?? []).map((d) => {
     const { analise } = analisarDivida(d);
