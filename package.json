@@ -9,17 +9,25 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "verificar:segredo-negocio": "node scripts/verificar-segredo-negocio.mjs",
+    "verificar:orcamento-bundle": "node scripts/verificar-orcamento-bundle.mjs",
+    "verificar:saude-deploy": "node scripts/verificar-saude-deploy.mjs",
+    "verificar:eficiencia": "node scripts/verificar-eficiencia.mjs"
   },
   "dependencies": {
+    "@grafana/faro-web-sdk": "^2.10.0",
     "@huggingface/transformers": "^4.2.0",
     "@react-pdf/renderer": "^4.6.1",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.3",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.2",
+    "@vercel/analytics": "^2.0.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
+    "driver.js": "^1.8.0",
     "google-auth-library": "^11.0.2",
     "lucide-react": "^1.31.0",
     "next": "16.3.1",
@@ -32,6 +40,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^20",

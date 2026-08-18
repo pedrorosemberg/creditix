@@ -60,6 +60,33 @@ Todo fluxo que aceita input não autenticado (login, cadastro, recuperação de 
 [`SECURITY.md`](../SECURITY.md) para os limites exatos e a diferença entre o modo com Upstash Redis
 (recomendado em produção) e o fallback em memória.
 
+## CAPTCHA no login (Cloudflare Turnstile, opcional)
+
+Implementado, mas desligado por padrão até você configurar as chaves — sem elas, nada muda no
+comportamento atual.
+
+**Escopo real da proteção**: o Supabase Auth só valida `captchaToken` nas chamadas client-facing do
+GoTrue (`signInWithPassword`, `signUp`, `resetPasswordForEmail`). Neste app, cadastro
+(`signupAction`), recuperação de senha e link mágico usam `gerarLinkAuth()` →
+`admin.generateLink()` — API de service role, autenticada por secret, chamada server-to-server — que
+**não passa pelo CAPTCHA do Supabase de qualquer forma**. Por isso o widget só foi adicionado ao
+formulário de login com senha (`/login`), que é o único fluxo onde ele de fato adiciona uma camada
+extra de proteção contra força bruta/scripts automatizados.
+
+Passo a passo para ativar:
+
+1. Crie um widget em [Cloudflare Turnstile](https://dash.cloudflare.com/?to=/:account/turnstile)
+   (grátis) e copie a **Site Key** e a **Secret Key**.
+2. No painel do Supabase do projeto: **Authentication → Attack Protection → Enable Captcha
+   protection**, selecione Turnstile e cole a **Secret Key** ali (nunca neste repositório).
+3. Defina `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (a Site Key, pública) nas variáveis de ambiente do
+   deploy (Vercel ou `.env.local`) — ver `.env.example`. Com a variável definida, o widget passa a
+   renderizar automaticamente em `/login` (`src/components/ui/turnstile-widget.tsx`) e
+   `loginAction` (`src/app/(auth)/actions.ts`) passa a enviar o token via
+   `options.captchaToken` para `signInWithPassword`.
+4. A CSP (`next.config.ts`) já libera `https://challenges.cloudflare.com` em `script-src`/`frame-src`
+   automaticamente quando a variável está definida — nenhum ajuste manual necessário.
+
 ## Programa de indicação e o cadastro
 
 Um cadastro pode carregar `?ref=CODIGO` (o código de indicação de quem convidou, ver `/convite`). Isso
@@ -73,19 +100,12 @@ tabela `referrals` e da função `minhas_indicacoes()`.
 
 Itens de segurança relacionados a autenticação que identificamos mas não implementamos, com o motivo:
 
-- **CAPTCHA no cadastro/login/recuperação de senha** — o Supabase Auth suporta nativamente hCaptcha ou
-  Cloudflare Turnstile (ambos têm plano gratuito), mas a ativação é feita no painel do Supabase
-  (**Authentication → Attack Protection**), não por código/migration. Passo a passo:
-  1. Crie um site em [Cloudflare Turnstile](https://dash.cloudflare.com/?to=/:account/turnstile) (grátis) e
-     copie a site key e a secret key.
-  2. No painel do Supabase do projeto: **Authentication → Attack Protection → Enable Captcha protection**,
-     selecione Turnstile e cole as chaves.
-  3. No frontend, os formulários de `/cadastro`, `/login` e `/recuperar-senha` passariam a precisar
-     renderizar o widget do Turnstile e enviar o token resultante como `options.captchaToken` nas chamadas
-     de `signUp`/`signInWithPassword`/`resetPasswordForEmail` — hoje o cadastro usa
-     `admin.generateLink()` (service role, sem captcha, porque é uma chamada server-to-server autenticada
-     por secret) então essa proteção cobriria sobretudo o login e a recuperação de senha, que são os
-     pontos mais expostos a força bruta.
+- **CAPTCHA no cadastro/recuperação de senha/link mágico** — como esses três fluxos usam
+  `admin.generateLink()` (service role), o CAPTCHA nativo do Supabase não os protege de qualquer
+  forma (ver seção acima). Mitigação real hoje: rate limiting por IP em cada um deles. Uma
+  mitigação adicional seria um CAPTCHA validado manualmente no código antes de chamar
+  `gerarLinkAuth()` (verificando o token direto na API do Turnstile, sem depender do Supabase) —
+  não implementado ainda.
 - **Proteção contra senha vazada (HaveIBeenPwned)** — recurso nativo do Supabase Auth
   (**Authentication → Policies → Password**), mas exige plano Pro ou superior; tentamos habilitar e o
   próprio painel bloqueou com essa mensagem. Reavaliar se/quando o projeto migrar de plano.

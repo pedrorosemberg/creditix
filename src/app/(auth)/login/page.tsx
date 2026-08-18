@@ -6,6 +6,7 @@ import { loginAction, solicitarLinkMagicoAction, type AuthState } from "../actio
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { TurnstileWidget } from "@/components/ui/turnstile-widget";
 
 const initialState: AuthState = undefined;
 
@@ -31,6 +32,7 @@ export default function LoginPage() {
               <Field label="Senha" htmlFor="password">
                 <Input id="password" name="password" type="password" required autoComplete="current-password" />
               </Field>
+              <TurnstileWidget />
               {state?.error && <p className="text-sm text-danger">{state.error}</p>}
               <Button type="submit" className="w-full" disabled={pending}>
                 {pending ? "Entrando..." : "Entrar"}

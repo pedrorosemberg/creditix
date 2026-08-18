@@ -28,6 +28,12 @@ detalhes e passos de reprodução. Responderemos o mais rápido possível.
   `UPSTASH_REDIS_REST_URL`/`TOKEN` estão configurados; sem isso, cai para um contador em memória do
   processo — suficiente em self-host de instância única, mas não confiável na Vercel sob carga real com
   várias instâncias serverless concorrentes. Ver [`docs/AUTENTICACAO.md`](./docs/AUTENTICACAO.md).
+- **CAPTCHA no login (Cloudflare Turnstile):** opcional, desligado por padrão. Quando
+  `NEXT_PUBLIC_TURNSTILE_SITE_KEY` está configurada (e o Supabase habilitado com a secret
+  correspondente), `/login` exige um token Turnstile válido antes de tentar autenticar — protege
+  contra força bruta/scripts automatizados no login com senha. Não cobre cadastro, recuperação de
+  senha ou link mágico (usam a Admin API do Supabase, fora do alcance desse captcha). Ver
+  [`docs/AUTENTICACAO.md`](./docs/AUTENTICACAO.md#captcha-no-login-cloudflare-turnstile-opcional).
 - **Cabeçalhos de segurança:** CSP (incluindo `object-src 'none'`), `X-Frame-Options: DENY`,
   `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Cross-Origin-Opener-Policy: same-origin`,
   `X-Permitted-Cross-Domain-Policies: none` e HSTS configurados em `next.config.ts` para todas as rotas.
@@ -37,7 +43,20 @@ detalhes e passos de reprodução. Responderemos o mais rápido possível.
   `Authorization: Bearer <CRON_SECRET>`, não sessão de usuário — evite expor esse endpoint sem o segredo.
 - **Sem segredos no repositório:** `.env*` está no `.gitignore` (exceto `.env.example`, que não contém
   valores reais). Segredos de produção/homologação vivem exclusivamente nas variáveis de ambiente do
-  provedor de deploy (Vercel) ou no `docker/.env` local (também ignorado pelo git).
+  provedor de deploy (Vercel) ou no `docker/.env` local (também ignorado pelo git). O gitleaks roda em
+  toda promoção (`.github/workflows/test-suite.yml`) como uma segunda camada.
+- **Lógica de negócio nunca vaza para o bundle do cliente:** `scripts/verificar-segredo-negocio.mjs` roda
+  em toda build de CI e falha se os prompts de guardrail da IA (`src/lib/ai/chat.ts`) ou textos do motor
+  de análise de dívidas aparecerem no JS enviado ao navegador — regressão automática caso algum Client
+  Component passe a importar esses módulos por engano.
+- **Painel admin_global sem acesso a dados financeiros:** `/admin` (restrito a quem está na tabela
+  `admin_users`) só expõe dados agregados de conta (e-mail, data de cadastro, contagem de indicações) —
+  nunca dívidas, transações ou qualquer valor financeiro de outros usuários. A checagem de permissão mora
+  no próprio banco (`is_admin_global()`, `security definer`), não só no código do app — ver
+  `docs/ARCHITECTURE.md#papel-admin_global`.
+- **Observabilidade sem PII:** Vercel Analytics e o Grafana Faro (opcional) coletam só métricas agregadas
+  de navegação, performance e erros — nunca e-mail, nome ou dado financeiro. Ver
+  `docs/OBSERVABILIDADE.md`.
 
 ## Autenticação
 
@@ -51,10 +70,9 @@ sessão válida. Detalhes do fluxo completo (cadastro, login, recuperação de s
 - **Proteção contra senha vazada (HaveIBeenPwned)**: recurso nativo do Supabase Auth, mas exige plano
   Pro ou superior — o projeto está no plano gratuito. Reavaliar se/quando fizer upgrade.
   ([docs](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection))
-- **CAPTCHA no cadastro/login** (hCaptcha ou Cloudflare Turnstile, ambos com plano gratuito): o Supabase
-  Auth suporta captcha nativamente, mas a configuração (site key/secret) é feita no painel do Supabase,
-  fora do alcance de automação neste repositório — ver `docs/AUTENTICACAO.md#próximos-passos` para o
-  passo a passo manual.
+- **CAPTCHA no cadastro/recuperação de senha/link mágico**: esses fluxos usam a Admin API do
+  Supabase (`admin.generateLink()`), que não passa pelo captcha nativo do GoTrue — hoje mitigados só
+  por rate limiting por IP. Ver `docs/AUTENTICACAO.md#próximos-passos`.
 - **CSP com nonce em vez de `'unsafe-inline'`** no `script-src`: reduziria a superfície de XSS, mas exige
   gerar e propagar um nonce por requisição (mudança maior, com risco real de quebrar alguma página se não
   for testada com cuidado) — não fiz essa troca sem validação em ambiente real primeiro.

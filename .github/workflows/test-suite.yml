@@ -1,0 +1,183 @@
+name: Test Suite (promoção dev→hmg→prod)
+
+# Suíte completa exigida para promover para hmg ou prod, além do gate rápido
+# do workflow CI (que já roda em toda PR, incluindo estas). Configure os
+# jobs abaixo como "required status checks" na proteção das branches hmg e
+# prod (veja docs/ENVIRONMENTS.md) — os nomes dos jobs são o texto que
+# aparece na configuração de proteção.
+#
+# Gate de criticidade/urgência: se a PR de promoção estiver marcada com a
+# label "hotfix" ou "emergencial" (aplicada automaticamente pelo workflow
+# "Promover ambiente" quando todos os commits da promoção são correções, ou
+# manualmente por quem revisa), os jobs lentos e de validação profunda
+# (escalabilidade, eficiência, funcionalidade end-to-end) são pulados — só
+# os gates rápidos e nunca-puláveis (segurança, saúde do deploy) continuam
+# obrigatórios. Uma feature nova sempre passa pela suíte completa.
+
+on:
+  pull_request:
+    branches: [hmg, prod]
+  workflow_dispatch:
+
+concurrency:
+  group: test-suite-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  classificar-urgencia:
+    runs-on: ubuntu-latest
+    outputs:
+      urgente: ${{ steps.check.outputs.urgente }}
+      base_url_env: ${{ steps.check.outputs.base_url_env }}
+    steps:
+      - id: check
+        env:
+          LABELS_JSON: ${{ toJSON(github.event.pull_request.labels) }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          URGENTE=$(node -e "
+            const labels = JSON.parse(process.env.LABELS_JSON || '[]');
+            const nomes = labels.map((l) => l.name.toLowerCase());
+            console.log(nomes.includes('hotfix') || nomes.includes('emergencial'));
+          ")
+          echo "urgente=$URGENTE" >> "$GITHUB_OUTPUT"
+          # O que testamos é sempre o ambiente que JÁ contém o candidato desta
+          # PR, não o destino (que ainda não recebeu o merge). Numa PR
+          # dev->hmg, quem tem o candidato é o preview de dev; numa PR
+          # hmg->prod, é o próprio hmg (já promovido e validado antes desta PR
+          # existir). Testar o destino antigo aqui não provaria nada sobre o
+          # código que está de fato subindo.
+          if [ "$BASE_REF" = "prod" ]; then
+            echo "base_url_env=HMG_BASE_URL" >> "$GITHUB_OUTPUT"
+          else
+            echo "base_url_env=DEV_BASE_URL" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Urgente: $URGENTE / destino: ${BASE_REF:-desconhecido}"
+
+  # --- Segurança: sempre obrigatório, nunca pulado por urgência. ---
+  seguranca:
+    needs: classificar-urgencia
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # gitleaks-action busca os commits da PR via API
+      # (GET /pulls/:number/commits) pra escanear só o que mudou — sem essa
+      # permissão a chamada volta 403 "Resource not accessible by
+      # integration" e o job falha antes de escanear qualquer coisa.
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Auditoria de dependências (bloqueante, apenas críticas)
+        # audit-level=critical (não "high"): @huggingface/transformers, usado
+        # no provedor de IA local experimental, traz vulnerabilidades "high"
+        # sem correção disponível em caminhos de código que este projeto
+        # nunca exercita (extração de ZIP arbitrário, processamento de
+        # imagem — só fazemos geração de texto). Ver SECURITY.md.
+        run: npm audit --audit-level=critical
+
+      - name: Varredura de segredos vazados (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # --- Cloud: o ambiente de destino está de fato no ar e saudável. ---
+  cloud:
+    needs: classificar-urgencia
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: ${{ vars[needs.classificar-urgencia.outputs.base_url_env] || secrets[needs.classificar-urgencia.outputs.base_url_env] }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verificar saúde do deploy
+        run: node scripts/verificar-saude-deploy.mjs
+
+  # --- Escalabilidade: teste de carga real (k6). Pulado em hotfix/sem BASE_URL. ---
+  escalabilidade:
+    needs: classificar-urgencia
+    if: needs.classificar-urgencia.outputs.urgente != 'true'
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: ${{ vars[needs.classificar-urgencia.outputs.base_url_env] || secrets[needs.classificar-urgencia.outputs.base_url_env] }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rodar suíte de carga (k6)
+        if: env.BASE_URL != ''
+        uses: grafana/k6-action@v0.3.1
+        with:
+          filename: loadtest/dividas-flow.js
+        env:
+          BASE_URL: ${{ env.BASE_URL }}
+
+      - name: Sem BASE_URL configurada
+        if: env.BASE_URL == ''
+        run: echo "Pulado — configure HMG_BASE_URL/PROD_BASE_URL para habilitar o teste de carga real."
+
+  # --- Eficiência: performance real via Lighthouse. Pulado em hotfix/sem BASE_URL. ---
+  eficiencia:
+    needs: classificar-urgencia
+    if: needs.classificar-urgencia.outputs.urgente != 'true'
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: ${{ vars[needs.classificar-urgencia.outputs.base_url_env] || secrets[needs.classificar-urgencia.outputs.base_url_env] }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci
+      - name: Verificar performance (Lighthouse)
+        run: npm run verificar:eficiencia
+
+  # --- Funcionalidade: smoke E2E contra o ambiente vivo. Pulado em hotfix/sem BASE_URL. ---
+  funcionalidade-e2e:
+    needs: classificar-urgencia
+    if: needs.classificar-urgencia.outputs.urgente != 'true'
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: ${{ vars[needs.classificar-urgencia.outputs.base_url_env] || secrets[needs.classificar-urgencia.outputs.base_url_env] }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Instalar dependências
+        if: env.BASE_URL != ''
+        run: npm ci
+
+      - name: Instalar navegadores do Playwright
+        if: env.BASE_URL != ''
+        run: npx playwright install --with-deps chromium
+
+      - name: Rodar smoke tests E2E
+        if: env.BASE_URL != ''
+        run: npm run test:e2e
+
+      - name: Publicar relatório do Playwright
+        if: always() && env.BASE_URL != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Sem BASE_URL configurada
+        if: env.BASE_URL == ''
+        run: echo "Pulado — configure HMG_BASE_URL/PROD_BASE_URL para habilitar o smoke E2E."

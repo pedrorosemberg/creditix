@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { Footer } from "@/components/layout/footer";
+import { verificarAdminGlobal } from "@/lib/supabase/admin-global";
+import { TourBoasVindas } from "@/components/onboarding/tour-boas-vindas";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient();
@@ -13,11 +15,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("display_name, avatar_url")
-    .eq("id", user.id)
-    .maybeSingle();
+  const [{ data: profile }, isAdminGlobal] = await Promise.all([
+    supabase.from("profiles").select("display_name, avatar_url").eq("id", user.id).maybeSingle(),
+    verificarAdminGlobal(),
+  ]);
 
   let avatarSignedUrl: string | null = null;
   if (profile?.avatar_url) {
@@ -27,7 +28,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      <TourBoasVindas />
+      <Sidebar isAdminGlobal={isAdminGlobal} />
       <div className="flex flex-1 flex-col">
         <Topbar nome={profile?.display_name ?? user.email ?? null} avatarUrl={avatarSignedUrl} />
         <main className="flex-1 bg-surface-muted p-4 md:p-6">{children}</main>
