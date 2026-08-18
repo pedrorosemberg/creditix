@@ -96,12 +96,22 @@ export async function signupAction(_prev: AuthState, formData: FormData): Promis
     await enviarEmail(parsed.data.email, emailConfirmacaoCadastro(link));
   } catch (err) {
     const mensagem = err instanceof Error ? err.message : "";
+    // AuthApiError do Supabase traz um "code" estável (ex.: "weak_password")
+    // além da "message" em inglês — checar o code primeiro evita depender
+    // do texto exato da mensagem, que pode mudar entre versões.
+    const codigo = err && typeof err === "object" && "code" in err ? String(err.code) : "";
     console.error("[signupAction] Falha ao concluir cadastro:", err);
     if (mensagem.toLowerCase().includes("already been registered") || mensagem.toLowerCase().includes("already registered")) {
       return { error: "Este e-mail já tem uma conta. Tente entrar." };
     }
     if (mensagem.toLowerCase().includes("rate limit") || mensagem.toLowerCase().includes("too many requests")) {
       return { error: "Muitos cadastros em pouco tempo. Aguarde alguns minutos e tente de novo." };
+    }
+    if (codigo === "weak_password" || mensagem.toLowerCase().includes("weak")) {
+      return {
+        error:
+          "Senha muito fraca ou comum demais. Use pelo menos 8 caracteres, misturando letras, números e símbolos — evite senhas óbvias (como \"12345678\" ou sequências repetidas).",
+      };
     }
     return { error: "Não foi possível concluir o cadastro. Tente novamente." };
   }
@@ -176,6 +186,12 @@ export async function redefinirSenhaAction(_prev: AuthState, formData: FormData)
 
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
   if (error) {
+    if (error.code === "weak_password" || error.message.toLowerCase().includes("weak")) {
+      return {
+        error:
+          "Senha muito fraca ou comum demais. Use pelo menos 8 caracteres, misturando letras, números e símbolos — evite senhas óbvias (como \"12345678\" ou sequências repetidas).",
+      };
+    }
     return { error: "Não foi possível atualizar a senha. Tente novamente." };
   }
 

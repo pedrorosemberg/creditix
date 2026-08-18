@@ -29,6 +29,10 @@ export function Footer() {
         <Link href="/privacidade" className="hover:underline">
           Privacidade e termos
         </Link>
+        {" · "}
+        <Link href="/faq" className="hover:underline">
+          Perguntas frequentes
+        </Link>
       </p>
     </footer>
   );

@@ -269,6 +269,23 @@ export type Database = {
         Args: Record<string, never>;
         Returns: { pendentes: number; aceitos: number; quitando_dividas: number }[];
       };
+      is_admin_global: {
+        Args: Record<string, never>;
+        Returns: boolean;
+      };
+      admin_listar_usuarios: {
+        Args: Record<string, never>;
+        Returns: {
+          id: string;
+          email: string | null;
+          display_name: string | null;
+          created_at: string;
+          last_sign_in_at: string | null;
+          indicacoes_pendentes: number;
+          indicacoes_aceitas: number;
+          indicados_quitando_dividas: number;
+        }[];
+      };
     };
   };
 };
