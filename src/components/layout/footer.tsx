@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { OPERADOR } from "@/lib/config/operador";
+
 export function Footer() {
   const ano = new Date().getFullYear();
 
@@ -6,14 +9,26 @@ export function Footer() {
       <p>
         Um produto{" "}
         <a
-          href="https://www.metadax.com.br"
+          href={OPERADOR.url}
           target="_blank"
           rel="noopener noreferrer"
           className="font-display tracking-wide text-brand-red hover:underline"
         >
-          METADAX
+          {OPERADOR.nome}
         </a>
-        {" — "}Licenciado sob MIT © {ano}
+        {" — "}
+        <Link href="/licenca" className="hover:underline">
+          Licenciado sob MIT
+        </Link>{" "}
+        © {ano}
+      </p>
+      <p className="mt-1">{OPERADOR.endereco}</p>
+      <p className="mt-1">
+        Criado por {OPERADOR.criador}. <Link href="/licenca" className="hover:underline">Licença</Link>
+        {" · "}
+        <Link href="/privacidade" className="hover:underline">
+          Privacidade e termos
+        </Link>
       </p>
     </footer>
   );

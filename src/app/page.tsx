@@ -186,7 +186,15 @@ export default async function HomePage() {
               Nenhuma tabela do banco aceita acesso anônimo, cada usuário só enxerga os próprios registros (Row
               Level Security no banco, não só no código do app), e a análise por IA roda em infraestrutura que
               controlamos — não em uma API de terceiros que armazena ou treina modelos com o que você digita. O
-              software é distribuído sob licença MIT.
+              software é distribuído sob{" "}
+              <Link href="/licenca" className="text-brand-red underline">
+                licença MIT
+              </Link>
+              . Veja também nossa{" "}
+              <Link href="/privacidade" className="text-brand-red underline">
+                política de privacidade e termos de uso
+              </Link>
+              .
             </p>
           </div>
         </section>

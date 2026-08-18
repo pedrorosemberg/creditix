@@ -17,6 +17,7 @@ import {
   Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { OPERADOR } from "@/lib/config/operador";
 
 const ITEMS = [
   { href: "/dashboard", label: "Painel", icon: LayoutDashboard },
@@ -64,12 +65,12 @@ export function Sidebar() {
       <div className="border-t border-border p-4 text-xs text-foreground-muted">
         Um produto{" "}
         <a
-          href="https://www.metadax.com.br"
+          href={OPERADOR.url}
           target="_blank"
           rel="noopener noreferrer"
           className="font-display tracking-wide text-brand-red hover:underline"
         >
-          METADAX
+          {OPERADOR.nome}
         </a>
       </div>
     </aside>
