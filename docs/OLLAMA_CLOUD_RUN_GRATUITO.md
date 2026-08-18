@@ -20,6 +20,23 @@ primeira requisição depois de um tempo parado demora alguns segundos a mais
 (o container "acorda"). Pra um app de uso pessoal/baixo volume, é um preço
 aceitável.
 
+## Acesso: sempre privado, via IAM (não Basic Auth)
+
+Diferente da variante VM (que usa Basic Auth atrás de um Caddy), aqui o
+serviço fica **sempre privado** (sem `--allow-unauthenticated`) e o
+controle de acesso é feito pelo próprio Cloud Run via IAM: só uma conta
+de serviço do Google com o papel `roles/run.invoker` consegue chamá-lo.
+A Vercel se autentica com essa conta de serviço, buscando um ID token do
+Google assinado especificamente pra URL do serviço a cada chamada (já
+implementado em `src/lib/ai/ollama.ts` via `OLLAMA_GOOGLE_SERVICE_ACCOUNT_JSON`).
+
+Duas vantagens sobre tentar deixar o serviço público:
+- Contas Google Workspace corporativas costumam ter a política **"Domain
+  Restricted Sharing"** ativada, que bloqueia tornar qualquer recurso
+  público — deixar privado evita essa barreira de propósito.
+- É o padrão que o próprio Google recomenda pra proteger um serviço
+  Cloud Run — mais robusto que Basic Auth por cima.
+
 ## 1. Pré-requisitos
 
 - Um projeto no Google Cloud já criado (ex.: `llmmtdx`).
@@ -53,22 +70,11 @@ mkdir ~/ollama-cloud-run && cd ~/ollama-cloud-run
 ```
 
 Copie os 3 arquivos de `docker/ollama-cloud-run/` deste repositório
-(`Dockerfile`, `Caddyfile`, `entrypoint.sh`) — no Cloud Shell, use `nano
-<arquivo>` e cole o conteúdo de cada um, ou clone o repositório se tiver
-acesso via `git clone`.
+(`Dockerfile`, `Caddyfile`, `entrypoint.sh`) — use `cat > arquivo
+<<'EOF' ... EOF` no Cloud Shell (mais confiável que colar dentro do
+`nano`) ou clone o repositório se tiver acesso via `git clone`.
 
-## 4. Gerar o hash da senha
-
-Escolha uma senha forte e gere o hash bcrypt (funciona no Cloud Shell, que
-já tem Docker):
-
-```bash
-docker run --rm caddy:2-alpine caddy hash-password --plaintext 'escolha-uma-senha-forte'
-```
-
-Guarde o resultado (começa com `$2a$...`) — vai usar no deploy.
-
-## 5. Build + push da imagem
+## 4. Build + push da imagem
 
 Substitua `qwen2.5:3b` pelo modelo escolhido no passo 2. O registro usado
 aqui é o **Artifact Registry** (`*-docker.pkg.dev`) — o antigo `gcr.io`
@@ -93,19 +99,19 @@ Troque `llmmtdx` pelo ID do seu projeto se for diferente. O build baixa o
 modelo escolhido durante o processo — pode levar vários minutos
 dependendo do tamanho do modelo, é esperado.
 
-## 6. Deploy
+## 5. Deploy (privado)
 
 ```bash
 gcloud run deploy ollama-servidor \
   --image southamerica-east1-docker.pkg.dev/llmmtdx/ollama-repo/ollama-servidor \
   --region southamerica-east1 \
-  --allow-unauthenticated \
+  --no-allow-unauthenticated \
   --port 8080 \
   --memory 4Gi \
   --cpu 2 \
   --min-instances 0 \
   --max-instances 1 \
-  --set-env-vars 'BASIC_AUTH_USER=creditix,BASIC_AUTH_HASH=$2a$...cole_o_hash_aqui...,OLLAMA_MODEL=qwen2.5:3b'
+  --set-env-vars 'OLLAMA_MODEL=qwen2.5:3b'
 ```
 
 Notas:
@@ -113,28 +119,14 @@ Notas:
   Supabase, reduz latência. Pode trocar por qualquer região do Cloud Run.
 - `--max-instances 1` evita escalar além de 1 réplica (mantém o uso
   previsível dentro do Always Free).
-- Use **aspas simples** no `--set-env-vars` (não duplas) — o hash bcrypt
-  tem `$` no meio, e dentro de aspas duplas o shell tentaria expandir
-  isso como variável, corrompendo o valor.
+- `--no-allow-unauthenticated` é o padrão do Cloud Run, mas deixe
+  explícito — evita qualquer tentativa acidental de tornar público.
 
 Ao final, o comando imprime a **URL do serviço** — algo como
 `https://ollama-servidor-xxxxxxxxxx-rj.a.run.app`. É essa URL que vai
 para o `OLLAMA_HOST` da Vercel.
 
-### Se `--allow-unauthenticated` falhar com erro de política da organização
-
-Contas Google Workspace corporativas costumam ter a política **"Domain
-Restricted Sharing"** ativada, que bloqueia tornar qualquer recurso
-público (erro: `FAILED_PRECONDITION: One or more users named in the
-policy do not belong to a permitted customer`). Isso é intencional — é
-uma proteção contra deixar serviços públicos sem querer — e normalmente
-só quem tem a role **Organization Policy Administrator** no nível da
-**Organização** (não do projeto) consegue abrir uma exceção, em **IAM e
-administrador → Políticas da organização** (com o seletor de projeto
-trocado pra Organização) → `iam.allowedPolicyMemberDomains`.
-
-Se essa política não puder ser alterada, o serviço precisa ficar privado
-e a Vercel se autentica com uma conta de serviço em vez de Basic Auth:
+## 6. Criar a conta de serviço que a Vercel vai usar
 
 ```bash
 gcloud iam service-accounts create vercel-ollama-invoker \
@@ -145,40 +137,45 @@ gcloud run services add-iam-policy-binding ollama-servidor \
   --member="serviceAccount:vercel-ollama-invoker@llmmtdx.iam.gserviceaccount.com" \
   --role=roles/run.invoker
 
-gcloud iam service-accounts keys create ~/vercel-ollama-key.json \
+gcloud iam service-accounts keys create $HOME/vercel-ollama-key.json \
   --iam-account=vercel-ollama-invoker@llmmtdx.iam.gserviceaccount.com
-cat ~/vercel-ollama-key.json
+cat $HOME/vercel-ollama-key.json
 ```
 
 Guarde a saída do `cat` (um JSON) — é uma credencial sensível, vai virar
-a variável `OLLAMA_GOOGLE_SERVICE_ACCOUNT_JSON` na Vercel (passo 8). Nesse
-caso, repita o deploy do passo 6 **sem** `--allow-unauthenticated` e sem
-as variáveis `BASIC_AUTH_*` (não são usadas nesse modo).
+a variável `OLLAMA_GOOGLE_SERVICE_ACCOUNT_JSON` na Vercel (passo 8).
 
-**Se a criação da chave também falhar** com
-`constraints/iam.disableServiceAccountKeyCreation` (outra política comum
-de organizações corporativas, que bloqueia chaves JSON exportáveis por
-segurança): mesmo caminho — precisa de alguém com acesso de
-administrador da organização pra abrir uma exceção pra esse projeto em
-**Políticas da organização**, ou configurar Workload Identity Federation
-(sem nenhuma chave estática) como alternativa mais robusta, fora do
-escopo deste guia.
+**Se `keys create` falhar** com
+`constraints/iam.disableServiceAccountKeyCreation` (política comum de
+organizações Google Workspace corporativas, que bloqueia chaves JSON
+exportáveis por segurança): precisa de alguém com acesso de
+administrador da **organização** (não do projeto) pra abrir uma exceção
+em **IAM e administrador → Políticas da organização** (com o seletor
+trocado pra Organização, não o projeto) → constraint
+`iam.disableServiceAccountKeyCreation` → Editar política → "Substituir a
+política do recurso pai" com uma regra de aplicação desativada só pra
+esse projeto.
 
 ## 7. Testar
 
-Se o serviço ficou **público** (Basic Auth):
+De dentro do Cloud Shell, usando sua própria identidade (só pra
+confirmar que o serviço responde — a Vercel vai usar a conta de
+serviço, não a sua):
 ```bash
-curl -u creditix:escolha-uma-senha-forte https://ollama-servidor-xxxxxxxxxx-rj.a.run.app/api/generate \
+curl -H "Authorization: Bearer $(gcloud auth print-identity-token --audiences=https://ollama-servidor-xxxxxxxxxx-rj.a.run.app)" \
+  https://ollama-servidor-xxxxxxxxxx-rj.a.run.app/api/generate \
   -d '{"model":"qwen2.5:3b","prompt":"Diga oi em uma palavra","stream":false}'
 ```
 
-Se o serviço ficou **privado** (conta de serviço), teste de dentro do
-Cloud Shell usando sua própria identidade (só pra confirmar que o
-serviço responde — a Vercel vai usar a conta de serviço, não a sua):
+Pra testar com a própria conta de serviço (o caminho exato que a Vercel
+usa):
 ```bash
-curl -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
+gcloud auth activate-service-account --key-file=$HOME/vercel-ollama-key.json
+TOKEN=$(gcloud auth print-identity-token --audiences=https://ollama-servidor-xxxxxxxxxx-rj.a.run.app)
+curl -H "Authorization: Bearer $TOKEN" \
   https://ollama-servidor-xxxxxxxxxx-rj.a.run.app/api/generate \
   -d '{"model":"qwen2.5:3b","prompt":"Diga oi em uma palavra","stream":false}'
+gcloud config set account <sua-conta-humana>   # volta pra sua conta
 ```
 
 A primeira chamada depois de um tempo sem uso pode demorar alguns segundos
@@ -187,28 +184,17 @@ A primeira chamada depois de um tempo sem uso pode demorar alguns segundos
 ## 8. Configurar a Vercel
 
 No painel do projeto na Vercel (Settings → Environment Variables),
-adicione, em qualquer um dos dois casos:
+adicione:
 
 | Variável | Valor |
 |---|---|
 | `AI_PROVIDER` | `ollama` |
-| `OLLAMA_HOST` | a URL do Cloud Run (passo 6) |
+| `OLLAMA_HOST` | a URL do Cloud Run (passo 5), **exatamente** igual (sem barra no final) — é a audiência do token, qualquer diferença causa 401 |
 | `OLLAMA_MODEL` | o modelo que você baixou (ex.: `qwen2.5:3b`) |
+| `OLLAMA_GOOGLE_SERVICE_ACCOUNT_JSON` | o conteúdo do `vercel-ollama-key.json`, colado inteiro numa linha só, sem aspas extras em volta |
 
-E, dependendo de como o serviço ficou configurado:
-
-**Serviço público (Basic Auth):**
-
-| Variável | Valor |
-|---|---|
-| `OLLAMA_BASIC_AUTH_USER` | `creditix` (ou o que você usou) |
-| `OLLAMA_BASIC_AUTH_PASSWORD` | a senha em texto puro (a mesma do `caddy hash-password`) |
-
-**Serviço privado (conta de serviço):**
-
-| Variável | Valor |
-|---|---|
-| `OLLAMA_GOOGLE_SERVICE_ACCOUNT_JSON` | o conteúdo do `vercel-ollama-key.json`, colado inteiro numa linha só |
+Não configure `OLLAMA_BASIC_AUTH_USER`/`OLLAMA_BASIC_AUTH_PASSWORD` nesse
+caminho — não são usados aqui (só existem pra variante VM com Caddy).
 
 Redeploy o projeto para as variáveis novas valerem. Chat e análise por IA
 passam a rodar no seu container no Cloud Run — nenhum dado sai pra
@@ -216,5 +202,5 @@ terceiros.
 
 ## Atualizando o modelo depois
 
-Repita os passos 5-6 com um `OLLAMA_MODEL` diferente (o Cloud Run cria
+Repita os passos 4-5 com um `OLLAMA_MODEL` diferente (o Cloud Run cria
 uma nova revisão automaticamente) e atualize `OLLAMA_MODEL` na Vercel.

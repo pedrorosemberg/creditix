@@ -2,10 +2,14 @@
 # https://...run.app) e repassa a requisição em HTTP simples pro container
 # na porta $PORT — por isso, ao contrário do Caddyfile da variante VM, aqui
 # não precisa de nenhuma configuração de certificado/ACME.
+#
+# Sem Basic Auth aqui de propósito: o controle de acesso é feito pelo
+# próprio Cloud Run via IAM (o serviço fica privado — sem
+# --allow-unauthenticated — e só uma conta de serviço com
+# `roles/run.invoker` consegue chamar). Adicionar Basic Auth aqui em cima
+# quebraria isso: a Vercel manda um token Google (Bearer), não
+# usuário/senha, e as duas coisas não convivem no mesmo header
+# Authorization.
 :{$PORT} {
-	basicauth {
-		{$BASIC_AUTH_USER} {$BASIC_AUTH_HASH}
-	}
-
 	reverse_proxy 127.0.0.1:11434
 }
