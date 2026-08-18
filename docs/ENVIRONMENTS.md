@@ -58,10 +58,20 @@ suíte completa rode de fato.
 ## Configurando a promoção automática (uma vez, manualmente)
 
 **Status atual desta instância:** `PROMOTE_PAT` (com as permissões corretas, incluindo `Issues`),
-`DEV_BASE_URL`, `PROD_BASE_URL` e "Allow auto-merge" já estão configurados — a promoção dev→prod roda de
-ponta a ponta sem intervenção manual. `NEXT_PUBLIC_GRAFANA_FARO_URL` (observabilidade opcional, ver
+`DEV_BASE_URL`, `PROD_BASE_URL`, "Allow auto-merge" e a proteção de branch de `prod` (passo 3 abaixo) já
+estão configurados — a promoção dev→prod roda de ponta a ponta sem intervenção manual, respeitando os
+checks obrigatórios. `NEXT_PUBLIC_GRAFANA_FARO_URL` (observabilidade opcional, ver
 `docs/OBSERVABILIDADE.md`) ainda não foi configurada — sem ela, o app funciona normalmente, só sem o
 Grafana Faro.
+
+**Pegadinha real que já aconteceu aqui:** branch protection rules/rulesets clássicos do GitHub não são
+aplicados em repositório **privado** de conta pessoal fora do plano Pro/Team — a regra pode existir na UI
+sem nunca ser de fato aplicada, sem nenhum aviso óbvio no fluxo normal. Isso ficou invisível por um bom
+tempo (nenhuma proteção jamais esteve ativa) até se manifestar na prática: a primeira PR de promoção
+dev→prod depois da simplificação para duas branches mergeou sozinha 5 segundos depois de aberta —
+antes de qualquer check rodar — porque não havia regra nenhuma de fato bloqueando o merge. O repositório
+foi tornado público para que a proteção de branch passasse a valer de verdade; se algum dia ele voltar a
+ser privado num plano sem Pro/Team, essa proteção some silenciosamente de novo.
 
 ### 1. Crie o secret `PROMOTE_PAT`
 
