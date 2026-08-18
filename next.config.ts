@@ -36,9 +36,27 @@ const nextConfig: NextConfig = {
   // via caminho de arquivo dinâmico — o file tracer do Next não detecta
   // isso sozinho, então precisam ser incluídos manualmente nas rotas que
   // usam IA para irem junto do bundle da função serverless na Vercel.
+  //
+  // O binário nativo do onnxruntime-node (libonnxruntime.so.1) também
+  // precisa ser incluído manualmente: ele é carregado via dlopen em
+  // runtime (não um require/import JS), então o tracer do Next nunca o
+  // detecta sozinho — sem isso a função falha com "libonnxruntime.so.1:
+  // cannot open shared object file" (confirmado nos logs de runtime da
+  // Vercel). Só o binário linux/x64 é incluído — é o único que a Vercel
+  // executa; os outros (darwin/win32) não são necessários no deploy.
   outputFileTracingIncludes: {
-    "/chat": ["./models-cache/**/*"],
-    "/dividas/[id]": ["./models-cache/**/*"],
+    "/chat": ["./models-cache/**/*", "./node_modules/onnxruntime-node/bin/napi-v6/linux/x64/**/*"],
+    "/dividas/[id]": ["./models-cache/**/*", "./node_modules/onnxruntime-node/bin/napi-v6/linux/x64/**/*"],
+  },
+  // Padrão do Next é 1MB para o corpo de uma Server Action — menor que o
+  // limite de 3MB da foto de perfil (configuracoes/actions.ts), então todo
+  // upload de foto um pouco maior falhava com 413 "Body exceeded 1 MB
+  // limit" antes mesmo de chegar no código da action (confirmado nos logs
+  // de runtime da Vercel).
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "5mb",
+    },
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
