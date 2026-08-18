@@ -1,37 +1,48 @@
 import "server-only";
+import path from "node:path";
+import { existsSync } from "node:fs";
 import type { AiProvider, AiProviderResult } from "./provider";
 
 /**
  * Provedor de IA local "embutido": roda um modelo pequeno (ONNX, via
- * @huggingface/transformers) dentro do próprio processo do servidor —
- * sem depender de um serviço externo tipo Ollama. Nenhum dado da dívida é
- * enviado a terceiros; a única chamada de rede é para baixar os pesos do
- * modelo (arquivos públicos, sem informação do usuário) na primeira vez
- * que a instância do servidor processa uma análise.
+ * @huggingface/transformers) dentro do próprio processo do servidor — sem
+ * depender de um serviço externo (nem Ollama, nem uma API de terceiros
+ * como Gemini). Nenhum dado do usuário sai desta infraestrutura: os pesos
+ * do modelo são baixados uma única vez durante o BUILD (ver
+ * scripts/baixar-modelo-ia.mjs, rodado como "prebuild") e ficam junto do
+ * próprio deploy — em runtime este provedor só lê arquivos locais
+ * (`allowRemoteModels = false`), nunca faz nenhuma chamada de rede.
  *
- * EXPERIMENTAL em ambientes serverless (ex.: Vercel): funções serverless
- * têm limite de tamanho, CPU e tempo de execução, e o disco (/tmp) não é
- * garantido entre execuções — cada cold start pode precisar rebaixar o
- * modelo, o que é lento e pode estourar o timeout da função. Funciona de
- * forma mais previsível em self-hosted (Docker/servidor próprio) com
- * disco persistente. Se falhar, a análise por IA apenas retorna erro —
- * o resto do site não é afetado.
+ * Se o build não conseguiu baixar o modelo por algum motivo (ver logs do
+ * prebuild), este provedor falha com um erro claro em vez de tentar
+ * baixar em runtime — em serverless (ex.: Vercel) o disco não é garantido
+ * entre execuções, então uma tentativa de download por requisição seria
+ * lenta e poderia nunca completar a tempo.
  */
 export class LocalModelProvider implements AiProvider {
   private static pipelinePromise: Promise<unknown> | null = null;
 
   constructor(
-    private readonly modelId = process.env.LOCAL_MODEL_ID || "onnx-community/Qwen2.5-0.5B-Instruct",
+    private readonly modelId = process.env.LOCAL_MODEL_ID || "onnx-community/SmolLM2-135M-Instruct",
     private readonly maxNewTokens = Number(process.env.LOCAL_MODEL_MAX_NEW_TOKENS) || 350,
     private readonly timeoutMs = Number(process.env.LOCAL_MODEL_TIMEOUT_MS) || 55_000,
+    private readonly cacheDir = process.env.LOCAL_MODEL_CACHE_DIR || path.join(process.cwd(), "models-cache"),
   ) {}
 
   private async obterPipeline() {
     if (!LocalModelProvider.pipelinePromise) {
+      if (!existsSync(path.join(this.cacheDir, this.modelId))) {
+        throw new Error(
+          `Modelo local "${this.modelId}" não encontrado em ${this.cacheDir}. Ele deveria ter sido baixado no build ` +
+            `(scripts/baixar-modelo-ia.mjs) — confira os logs de build. Alternativa: configure AI_PROVIDER=ollama com ` +
+            "um servidor Ollama próprio.",
+        );
+      }
       LocalModelProvider.pipelinePromise = (async () => {
         const { pipeline, env } = await import("@huggingface/transformers");
-        // Único diretório gravável de forma confiável em serverless.
-        env.cacheDir = process.env.LOCAL_MODEL_CACHE_DIR || "/tmp/creditix-modelos";
+        env.cacheDir = this.cacheDir;
+        // Nunca busca na rede em runtime — o modelo já foi baixado no build.
+        env.allowRemoteModels = false;
         return pipeline("text-generation", this.modelId, { dtype: "q4" });
       })();
     }

@@ -63,6 +63,15 @@ antes de abrir uma PR evita ida e volta.
 
 ## Análise por IA
 
-Por padrão (`AI_PROVIDER=ollama`), a análise por IA roda inteiramente local via
-[Ollama](https://ollama.com) — nenhum dado da sua dívida sai da sua máquina/servidor. Para usar o Gemini
-em vez disso, defina `AI_PROVIDER=gemini` e `GEMINI_API_KEY` nas variáveis de ambiente.
+Por padrão (sem `AI_PROVIDER` definido), a análise por IA e o chat rodam com um modelo pequeno embutido
+no próprio processo do servidor (`onnx-community/SmolLM2-135M-Instruct`, via `@huggingface/transformers`)
+— nenhum dado do usuário sai da sua infraestrutura para nenhum serviço de terceiros, nem para a Hugging
+Face: os pesos do modelo são baixados **uma única vez, no build** (`scripts/baixar-modelo-ia.mjs`, hook
+`prebuild`) e ficam junto do próprio deploy; em runtime não há nenhuma chamada de rede.
+
+- Self-hosted com um servidor [Ollama](https://ollama.com) próprio: defina `AI_PROVIDER=ollama` e
+  `OLLAMA_HOST`/`OLLAMA_MODEL`.
+- Modelo local maior/melhor no self-hosted (sem limite de tamanho de função serverless): defina
+  `LOCAL_MODEL_ID` para outro modelo ONNX compatível (ex.: `onnx-community/Qwen2.5-0.5B-Instruct`).
+- Gemini (API do Google) é suportado mas **desativado por padrão** — dados iriam para os servidores do
+  Google. Só é usado se você definir `AI_PROVIDER=gemini` e `GEMINI_API_KEY` explicitamente.

@@ -31,6 +31,15 @@ const nextConfig: NextConfig = {
   // nativos (onnxruntime-node) que não podem ser processados pelo
   // bundler — precisam ser carregados como módulo Node normal em runtime.
   serverExternalPackages: ["@huggingface/transformers", "onnxruntime-node", "sharp"],
+  // Os pesos do modelo local (baixados no build por
+  // scripts/baixar-modelo-ia.mjs, em ./models-cache) são lidos em runtime
+  // via caminho de arquivo dinâmico — o file tracer do Next não detecta
+  // isso sozinho, então precisam ser incluídos manualmente nas rotas que
+  // usam IA para irem junto do bundle da função serverless na Vercel.
+  outputFileTracingIncludes: {
+    "/chat": ["./models-cache/**/*"],
+    "/dividas/[id]": ["./models-cache/**/*"],
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

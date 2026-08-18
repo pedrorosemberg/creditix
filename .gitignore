@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# pesos do modelo de IA local, baixados no build (ver scripts/baixar-modelo-ia.mjs)
+/models-cache/
+
 # production
 /build
 

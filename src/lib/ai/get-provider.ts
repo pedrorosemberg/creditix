@@ -5,23 +5,22 @@ import { LocalModelProvider } from "./local";
 import type { AiProvider } from "./provider";
 
 /**
- * AI_PROVIDER explícito sempre vence. Sem ele, tentar Ollama por padrão
- * era uma escolha ruim fora do self-hosted: em ambientes serverless (ex.:
- * Vercel) não existe "localhost:11434" nenhum — a chamada falha sempre,
- * de forma silenciosa para o usuário final ("IA indisponível"). Por isso o
- * fallback automático olha o que está de fato configurado no ambiente:
- * GEMINI_API_KEY (mais confiável em serverless) > OLLAMA_HOST explícito
- * (sinal de self-hosted de verdade) > modelo local embutido (funciona sem
- * nenhuma chave, mas é experimental em serverless — ver local.ts).
+ * AI_PROVIDER explícito sempre vence. Sem ele, o padrão é o modelo local
+ * embutido (LocalModelProvider) — por decisão de produto, dados do usuário
+ * nunca são enviados a uma API de terceiros (Gemini) por padrão; o Gemini
+ * só é usado se alguém configurar AI_PROVIDER=gemini explicitamente. Não
+ * usamos Ollama como padrão automático porque em ambientes serverless
+ * (ex.: Vercel) não existe "localhost:11434" nenhum — a chamada falharia
+ * sempre; Ollama só entra se OLLAMA_HOST for configurado explicitamente,
+ * sinal de que existe de fato um servidor self-hosted apontado.
  */
 export function obterProvedor(): AiProvider {
   const provedor = process.env.AI_PROVIDER;
 
   if (provedor === "gemini") return new GeminiProvider();
-  if (provedor === "local") return new LocalModelProvider();
   if (provedor === "ollama") return new OllamaProvider();
+  if (provedor === "local") return new LocalModelProvider();
 
-  if (process.env.GEMINI_API_KEY) return new GeminiProvider();
   if (process.env.OLLAMA_HOST) return new OllamaProvider();
   return new LocalModelProvider();
 }

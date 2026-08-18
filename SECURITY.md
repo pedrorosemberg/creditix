@@ -50,12 +50,18 @@ Se você rodar o stack self-hosted (`docker/`), a segurança do ambiente também
 - Mantenha as imagens Docker atualizadas (`docker compose pull`).
 - Faça backup regular do volume `db-data`.
 
-## Análise por IA local embutida (experimental)
+## Análise por IA local embutida (padrão)
 
-O provedor `AI_PROVIDER=local` roda um modelo pequeno (ONNX, via
-`@huggingface/transformers`) dentro do próprio processo do servidor, sem
-enviar dados a nenhuma API externa — só os pesos do modelo (arquivos
-públicos, sem informação do usuário) são baixados na primeira execução.
+O provedor local (padrão quando `AI_PROVIDER` não está definido) roda um
+modelo pequeno (ONNX, via `@huggingface/transformers`) dentro do próprio
+processo do servidor, sem enviar dados a nenhuma API externa. Os pesos do
+modelo (arquivos públicos, sem nenhuma informação de usuário) são baixados
+uma única vez durante o **build** (`scripts/baixar-modelo-ia.mjs`, hook
+`prebuild`) e ficam junto do próprio deploy — em runtime o provedor lê
+apenas arquivos locais (`env.allowRemoteModels = false`); nenhuma chamada
+de rede acontece ao processar uma análise ou mensagem de chat. Por decisão
+de produto, o Gemini (API do Google) fica desativado por padrão pelo mesmo
+motivo — só é usado se alguém configurar `AI_PROVIDER=gemini` de propósito.
 
 Essa dependência traz duas vulnerabilidades conhecidas, sem correção
 disponível no momento, em pacotes transitivos do `onnxruntime-node`:
