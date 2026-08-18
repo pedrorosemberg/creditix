@@ -77,11 +77,23 @@ ajustadas:
 Conecte via SSH — `ssh ubuntu@<ip-publico>` (Ubuntu) ou
 `ssh opc@<ip-publico>` (Oracle Linux) — e rode:
 
-```bash
-curl -fsSL https://get.docker.com | sudo sh
-sudo usermod -aG docker $USER
-# saia e reconecte via SSH para o grupo "docker" valer
-```
+- Ubuntu:
+  ```bash
+  curl -fsSL https://get.docker.com | sudo sh
+  sudo usermod -aG docker $USER
+  # saia e reconecte via SSH para o grupo "docker" valer
+  ```
+- Oracle Linux (o script `get.docker.com` não reconhece essa distro —
+  `ERROR: Unsupported distribution 'ol'` — instale pelo repositório
+  oficial do Docker para CentOS/RHEL, compatível com o Oracle Linux):
+  ```bash
+  sudo dnf install -y dnf-utils
+  sudo dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+  sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  sudo systemctl enable --now docker
+  sudo usermod -aG docker $USER
+  # saia e reconecte via SSH para o grupo "docker" valer
+  ```
 
 ### Se a VM tiver só 1GB de RAM (shape E2.1.Micro)
 
