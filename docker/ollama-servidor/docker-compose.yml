@@ -1,0 +1,43 @@
+# Stack mínima: só o Ollama + um Caddy na frente cuidando de HTTPS
+# automático e exigindo usuário/senha (o Ollama em si não tem
+# autenticação própria). Pensada para rodar num servidor gratuito (ex.:
+# Oracle Cloud "Always Free") separado da Vercel — veja
+# docs/OLLAMA_SERVIDOR_GRATUITO.md para o passo a passo completo.
+#
+# Uso:
+#   cp .env.example .env   # preencha DOMINIO, BASIC_AUTH_USER, BASIC_AUTH_HASH
+#   docker compose up -d
+#   docker compose exec ollama ollama pull llama3.1
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    volumes:
+      - ollama-data:/root/.ollama
+    networks: [ollama-servidor]
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    environment:
+      DOMINIO: ${DOMINIO}
+      BASIC_AUTH_USER: ${BASIC_AUTH_USER}
+      BASIC_AUTH_HASH: ${BASIC_AUTH_HASH}
+    depends_on: [ollama]
+    networks: [ollama-servidor]
+
+networks:
+  ollama-servidor:
+
+volumes:
+  ollama-data:
+  caddy-data:
+  caddy-config:
