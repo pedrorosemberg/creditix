@@ -22,7 +22,7 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 
-const MODEL_ID = process.env.LOCAL_MODEL_ID || "onnx-community/SmolLM2-135M-Instruct";
+const MODEL_ID = process.env.LOCAL_MODEL_ID || "onnx-community/Qwen2.5-0.5B-Instruct";
 const CACHE_DIR = path.join(process.cwd(), "models-cache");
 
 function deveGerarModeloLocal() {
@@ -58,7 +58,17 @@ async function main() {
 
 main().catch((err) => {
   console.error("[baixar-modelo-ia] Falha ao baixar o modelo:", err);
+  const mensagem = String(err?.message ?? err);
+  if (/unauthorized|forbidden|401|403/i.test(mensagem)) {
+    console.error(
+      "[baixar-modelo-ia] Isso parece falta de autenticação junto à Hugging Face (ela passou a exigir um " +
+        'token mesmo para baixar arquivos públicos). Gere um token gratuito, só de leitura, em ' +
+        "https://huggingface.co/settings/tokens e configure HF_TOKEN nas variáveis de ambiente do build. " +
+        "Isso NÃO envia nenhum dado de usuário para a Hugging Face — só autentica o download dos pesos " +
+        "(arquivos públicos) durante o build.",
+    );
+  }
   console.error(
-    "[baixar-modelo-ia] O build vai continuar — o provedor local ficará indisponível até um build futuro conseguir baixar o modelo (ver AI_PROVIDER/GEMINI_API_KEY/OLLAMA_HOST como alternativa).",
+    "[baixar-modelo-ia] O build vai continuar — o provedor local ficará indisponível até um build futuro conseguir baixar o modelo (ver AI_PROVIDER/OLLAMA_HOST como alternativa self-hosted).",
   );
 });
