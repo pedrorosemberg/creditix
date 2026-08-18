@@ -61,6 +61,8 @@ export async function criarDividaAction(formData: FormData) {
   if (error) throw new Error("Não foi possível salvar a dívida.");
 
   revalidatePath("/dividas");
+  revalidatePath("/recuperacao");
+  revalidatePath("/dashboard");
   redirect("/dividas");
 }
 
@@ -94,6 +96,8 @@ export async function atualizarDividaAction(id: string, formData: FormData) {
 
   revalidatePath("/dividas");
   revalidatePath(`/dividas/${dividaId}`);
+  revalidatePath("/recuperacao");
+  revalidatePath("/dashboard");
   redirect(`/dividas/${dividaId}`);
 }
 
@@ -103,5 +107,7 @@ export async function excluirDividaAction(formData: FormData) {
   const { error } = await supabase.from("debts").delete().eq("id", dividaId);
   if (error) throw new Error("Não foi possível excluir a dívida.");
   revalidatePath("/dividas");
+  revalidatePath("/recuperacao");
+  revalidatePath("/dashboard");
   redirect("/dividas");
 }

@@ -21,6 +21,8 @@ export async function criarRendaAction(formData: FormData) {
   const { error } = await supabase.from("incomes").insert({ ...dados, user_id: user.id });
   if (error) throw new Error("Não foi possível salvar a renda.");
   revalidatePath("/orcamento");
+  revalidatePath("/recuperacao");
+  revalidatePath("/dashboard");
 }
 
 export async function excluirRendaAction(formData: FormData) {
@@ -28,6 +30,8 @@ export async function excluirRendaAction(formData: FormData) {
   const supabase = await createClient();
   await supabase.from("incomes").delete().eq("id", id);
   revalidatePath("/orcamento");
+  revalidatePath("/recuperacao");
+  revalidatePath("/dashboard");
 }
 
 export async function criarGastoAction(formData: FormData) {
@@ -53,6 +57,8 @@ export async function criarGastoAction(formData: FormData) {
   });
   if (error) throw new Error("Não foi possível salvar o gasto.");
   revalidatePath("/orcamento");
+  revalidatePath("/recuperacao");
+  revalidatePath("/dashboard");
 }
 
 export async function excluirGastoAction(formData: FormData) {
@@ -60,4 +66,6 @@ export async function excluirGastoAction(formData: FormData) {
   const supabase = await createClient();
   await supabase.from("expenses").delete().eq("id", id);
   revalidatePath("/orcamento");
+  revalidatePath("/recuperacao");
+  revalidatePath("/dashboard");
 }

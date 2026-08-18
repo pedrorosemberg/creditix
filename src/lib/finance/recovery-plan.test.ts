@@ -32,47 +32,98 @@ describe("calcularOpcaoAvista", () => {
 });
 
 describe("montarPlanoRecuperacao", () => {
-  it("aloca dívida única dentro da margem disponível", () => {
+  it("reserva uma fração da margem como mínimo existencial, nunca comprometida com dívidas", () => {
     const plano = montarPlanoRecuperacao({
       rendaMensal: 5000,
       gastosEssenciais: 3000,
       dividas: [dividaBase],
     });
     expect(plano.margemDisponivel).toBe(2000);
-    expect(plano.simulacoes[0].alocada).toBe(true);
-    expect(plano.simulacoes[0].parcelado?.valorParcela).toBeLessThanOrEqual(2000);
+    expect(plano.reservaSeguranca).toBe(300); // 15% padrão
+    expect(plano.margemParaDividas).toBe(1700);
   });
 
-  it("prioriza por taxa de juros na estratégia avalanche", () => {
-    const dividaJurosAlto: DividaParaPlano = { ...dividaBase, id: "2", taxaMensalImplicita: 0.2, valorAtual: 500 };
-    const dividaJurosBaixo: DividaParaPlano = { ...dividaBase, id: "3", taxaMensalImplicita: 0.01, valorAtual: 500 };
+  it("quita à vista em vez de parcelar quando o valor cabe na margem acumulada", () => {
+    // Dívida de 800 (com desconto) cabe na primeira acumulação de margem 1000.
     const plano = montarPlanoRecuperacao({
-      rendaMensal: 5000,
-      gastosEssenciais: 4900,
-      dividas: [dividaJurosBaixo, dividaJurosAlto],
-      estrategia: "avalanche",
-    });
-    expect(plano.simulacoes[0].dividaId).toBe("2");
-  });
-
-  it("marca dívida como não alocada quando não cabe no orçamento", () => {
-    const dividaGrande: DividaParaPlano = { ...dividaBase, valorAtual: 100000 };
-    const plano = montarPlanoRecuperacao({
-      rendaMensal: 3000,
-      gastosEssenciais: 2900,
-      dividas: [dividaGrande],
-    });
-    expect(plano.simulacoes[0].alocada).toBe(false);
-    expect(plano.recomendarRepactuacaoJudicial).toBe(true);
-  });
-
-  it("recomenda revisar orçamento quando margem é negativa", () => {
-    const plano = montarPlanoRecuperacao({
-      rendaMensal: 2000,
-      gastosEssenciais: 2500,
+      rendaMensal: 4000,
+      gastosEssenciais: 2823.53, // margem 1176,47 -> reserva 15% -> ~1000 para dívidas
       dividas: [dividaBase],
     });
-    expect(plano.margemDisponivel).toBeLessThan(0);
-    expect(plano.observacoes.some((o) => o.includes("gastos essenciais"))).toBe(true);
+    const resultado = plano.resultados[0];
+    expect(resultado.modalidadeEscolhida).toBe("avista_acumulado");
+    expect(resultado.parcelado).toBeNull();
+    expect(plano.totalEconomizadoComDescontos).toBe(200);
+  });
+
+  it("prioriza quitar a primeira dívida à vista antes de parcelar a segunda em paralelo", () => {
+    // Duas dívidas de 800 (à vista) cada; margem para dívidas de 900/mês.
+    // Antes: parcelaria as duas em paralelo. Agora: quita a primeira no
+    // mês 1 e usa a sobra + acúmulo do mês 2 para resolver a segunda,
+    // evitando duas parcelas simultâneas.
+    const dividaA: DividaParaPlano = { ...dividaBase, id: "a", credorNome: "A", taxaMensalImplicita: 0.2 };
+    const dividaB: DividaParaPlano = { ...dividaBase, id: "b", credorNome: "B", taxaMensalImplicita: 0.1 };
+    const plano = montarPlanoRecuperacao({
+      rendaMensal: 3058.82,
+      gastosEssenciais: 2000, // margem 1058,82 -> reserva 15% -> margemParaDividas = 900
+      dividas: [dividaA, dividaB],
+      estrategia: "avalanche",
+    });
+
+    const resultadoA = plano.resultados.find((r) => r.dividaId === "a")!;
+    const resultadoB = plano.resultados.find((r) => r.dividaId === "b")!;
+    expect(resultadoA.modalidadeEscolhida).toBe("avista_acumulado");
+    expect(resultadoA.mesQuitacao).toBe(1);
+    expect(resultadoB.modalidadeEscolhida).toBe("avista_acumulado");
+    // nenhuma das duas deveria ter sido parcelada em paralelo
+    expect(resultadoA.parcelado).toBeNull();
+    expect(resultadoB.parcelado).toBeNull();
+  });
+
+  it("só parcela o que sobra depois da janela de acúmulo, dentro da margem", () => {
+    const dividaGrande: DividaParaPlano = {
+      ...dividaBase,
+      id: "grande",
+      valorAtual: 10000,
+      percentualDescontoAvista: null,
+      taxaMensalImplicita: 0.3,
+    };
+    const plano = montarPlanoRecuperacao({
+      rendaMensal: 3000,
+      gastosEssenciais: 2000, // margem 1000 -> reserva 150 -> margemParaDividas 850
+      dividas: [dividaGrande],
+      janelaAcumulacaoMeses: 2,
+    });
+    const resultado = plano.resultados[0];
+    expect(resultado.modalidadeEscolhida).toBe("parcelado");
+    expect(resultado.parcelado!.valorParcela).toBeLessThanOrEqual(850);
+    // o valor parcelado já deve estar líquido do que foi acumulado nos 2 meses (2 * 850 = 1700)
+    expect(resultado.parcelado!.valorTotal).toBeLessThan(10000);
+  });
+
+  it("nunca propõe plano quando a margem some após a reserva de segurança", () => {
+    const plano = montarPlanoRecuperacao({
+      rendaMensal: 2000,
+      gastosEssenciais: 2000,
+      dividas: [dividaBase],
+    });
+    expect(plano.margemParaDividas).toBe(0);
+    expect(plano.resultados[0].modalidadeEscolhida).toBe("nao_alocada");
+    expect(plano.observacoes.some((o) => o.includes("mínimo existencial"))).toBe(true);
+  });
+
+  it("recomenda repactuação judicial quando o total de dívidas é muito maior que a renda anual", () => {
+    const dividaEnorme: DividaParaPlano = {
+      ...dividaBase,
+      id: "enorme",
+      valorAtual: 200000,
+      percentualDescontoAvista: null,
+    };
+    const plano = montarPlanoRecuperacao({
+      rendaMensal: 2000,
+      gastosEssenciais: 1500,
+      dividas: [dividaEnorme],
+    });
+    expect(plano.recomendarRepactuacaoJudicial).toBe(true);
   });
 });

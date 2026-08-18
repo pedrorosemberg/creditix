@@ -12,11 +12,11 @@ function baseTemplate(params: { titulo: string; corpo: string; textoBotao: strin
   const { titulo, corpo, textoBotao, link } = params;
   return `
   <div style="font-family:Inter,Arial,sans-serif;max-width:480px;margin:0 auto;color:#1e1e1e">
-    <h1 style="color:#0056B3;font-size:20px;margin-bottom:16px">Creditix</h1>
+    <h1 style="color:#DC2626;font-size:20px;margin-bottom:16px">Creditix</h1>
     <h2 style="font-size:16px;margin-bottom:8px">${titulo}</h2>
     <p style="color:#3a3d42;line-height:1.5">${corpo}</p>
     <p style="margin-top:24px">
-      <a href="${link}" style="background:#0056B3;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">${textoBotao}</a>
+      <a href="${link}" style="background:#DC2626;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">${textoBotao}</a>
     </p>
     <p style="margin-top:16px;font-size:12px;color:#5b5f66;word-break:break-all">
       Se o botão não funcionar, copie e cole este link no navegador: ${link}
@@ -46,6 +46,30 @@ export function emailRedefinicaoSenha(link: string) {
       titulo: "Redefinir senha",
       corpo: "Recebemos um pedido para redefinir a senha da sua conta Creditix. Clique no botão abaixo para escolher uma nova senha. Este link expira em pouco tempo por segurança.",
       textoBotao: "Redefinir senha",
+      link,
+    }),
+  };
+}
+
+export function emailConfirmarEmailAtual(link: string, emailNovo: string) {
+  return {
+    subject: "Confirme a troca de e-mail da sua conta Creditix",
+    html: baseTemplate({
+      titulo: "Confirmar troca de e-mail",
+      corpo: `Foi solicitada a troca do e-mail da sua conta Creditix para <strong>${emailNovo}</strong>. Para autorizar, confirme aqui pelo seu e-mail atual. Você também vai precisar confirmar pelo novo endereço.`,
+      textoBotao: "Confirmar pelo e-mail atual",
+      link,
+    }),
+  };
+}
+
+export function emailConfirmarEmailNovo(link: string) {
+  return {
+    subject: "Confirme seu novo e-mail no Creditix",
+    html: baseTemplate({
+      titulo: "Confirmar novo e-mail",
+      corpo: "Este é o novo e-mail solicitado para sua conta Creditix. Confirme aqui para concluir a troca (a confirmação pelo e-mail anterior também é necessária).",
+      textoBotao: "Confirmar novo e-mail",
       link,
     }),
   };

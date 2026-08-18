@@ -28,23 +28,42 @@ export type OpcaoParcelada = {
   valorTotal: number;
 };
 
-export type SimulacaoDivida = {
+export type ModalidadeEscolhida = "avista_acumulado" | "parcelado" | "nao_alocada";
+
+export type ResultadoDividaPlano = {
   dividaId: string;
   credorNome: string;
   avista: OpcaoAvista;
+  modalidadeEscolhida: ModalidadeEscolhida;
+  mesQuitacao: number | null;
+  mesInicioParcelamento: number | null;
   parcelado: OpcaoParcelada | null;
-  alocada: boolean;
-  motivoNaoAlocada?: string;
+  motivo: string;
 };
+
+export type PassoTimeline =
+  | { mes: number; evento: "acumulo"; potAcumulado: number }
+  | { mes: number; evento: "pagamento_avista"; dividaId: string; credorNome: string; valor: number }
+  | {
+      mes: number;
+      evento: "inicio_parcelamento";
+      dividaId: string;
+      credorNome: string;
+      numParcelas: number;
+      valorParcela: number;
+    };
 
 export type PlanoRecuperacao = {
   rendaMensal: number;
   gastosEssenciais: number;
   margemDisponivel: number;
-  comprometidoMensal: number;
-  saldoLivreAposPlano: number;
+  reservaSeguranca: number;
+  margemParaDividas: number;
   estrategia: EstrategiaPriorizacao;
-  simulacoes: SimulacaoDivida[];
+  janelaAcumulacaoMeses: number;
+  resultados: ResultadoDividaPlano[];
+  timeline: PassoTimeline[];
+  totalEconomizadoComDescontos: number;
   recomendarRepactuacaoJudicial: boolean;
   observacoes: string[];
 };
@@ -54,6 +73,11 @@ export type EntradaPlanoRecuperacao = {
   gastosEssenciais: number;
   dividas: DividaParaPlano[];
   estrategia?: EstrategiaPriorizacao;
+  /** Quantos meses priorizar juntar dinheiro antes de considerar parcelamento. Padrão: 2. */
+  janelaAcumulacaoMeses?: number;
+  /** Fração da margem mensal mantida como reserva (mínimo existencial), nunca comprometida com dívidas. Padrão: 0.15. */
+  percentualReservaSeguranca?: number;
   maxParcelas?: number;
   minParcelasIdeal?: number;
+  horizonteMaximoMeses?: number;
 };

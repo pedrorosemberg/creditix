@@ -56,7 +56,7 @@ export default async function DashboardPage() {
           <ul className="mt-3 space-y-2">
             {alertas.map(({ divida, analise }) => (
               <li key={divida.id} className="flex items-center justify-between text-sm">
-                <Link href={`/dividas/${divida.id}`} className="font-medium text-brand-blue hover:underline">
+                <Link href={`/dividas/${divida.id}`} className="font-medium text-brand-red hover:underline">
                   {divida.credor_nome}
                 </Link>
                 <VeredictoBadge veredicto={analise.veredicto} />

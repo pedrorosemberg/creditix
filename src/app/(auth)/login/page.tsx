@@ -18,7 +18,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-surface-muted px-4">
       <Card className="w-full max-w-sm">
         <div className="mb-6 text-center">
-          <span className="font-display text-2xl text-brand-blue">Creditix</span>
+          <span className="font-display text-2xl text-brand-red">Creditix</span>
           <p className="mt-1 text-sm text-foreground-muted">Entre na sua conta</p>
         </div>
 
@@ -37,13 +37,13 @@ export default function LoginPage() {
               </Button>
             </form>
             <div className="mt-3 flex items-center justify-between text-sm">
-              <Link href="/recuperar-senha" className="text-brand-blue hover:underline">
+              <Link href="/recuperar-senha" className="text-brand-red hover:underline">
                 Esqueceu a senha?
               </Link>
               <button
                 type="button"
                 onClick={() => setMostrarMagico(true)}
-                className="text-brand-blue hover:underline"
+                className="text-brand-red hover:underline"
               >
                 Entrar sem senha
               </button>
@@ -64,7 +64,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setMostrarMagico(false)}
-              className="mt-3 text-sm text-brand-blue hover:underline"
+              className="mt-3 text-sm text-brand-red hover:underline"
             >
               Voltar para entrar com senha
             </button>
@@ -73,7 +73,7 @@ export default function LoginPage() {
 
         <p className="mt-4 text-center text-sm text-foreground-muted">
           Ainda não tem conta?{" "}
-          <Link href="/cadastro" className="font-medium text-brand-blue hover:underline">
+          <Link href="/cadastro" className="font-medium text-brand-red hover:underline">
             Criar conta
           </Link>
         </p>

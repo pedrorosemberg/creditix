@@ -30,6 +30,8 @@ export async function criarTransacaoAction(formData: FormData) {
   });
   if (error) throw new Error("Não foi possível salvar a transação.");
   revalidatePath("/transacoes");
+  revalidatePath("/dashboard");
+  revalidatePath("/lembretes");
 }
 
 export async function excluirTransacaoAction(formData: FormData) {
@@ -37,4 +39,6 @@ export async function excluirTransacaoAction(formData: FormData) {
   const supabase = await createClient();
   await supabase.from("transactions").delete().eq("id", id);
   revalidatePath("/transacoes");
+  revalidatePath("/dashboard");
+  revalidatePath("/lembretes");
 }

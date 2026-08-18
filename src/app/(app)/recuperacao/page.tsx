@@ -16,6 +16,12 @@ const ESTRATEGIA_LABEL: Record<EstrategiaPriorizacao, string> = {
   juridica_primeiro: "Jurídica primeiro (contestar antes de pagar)",
 };
 
+const MODALIDADE_LABEL: Record<string, { label: string; tone: "success" | "warning" | "danger" }> = {
+  avista_acumulado: { label: "Quitada à vista", tone: "success" },
+  parcelado: { label: "Parcelada", tone: "warning" },
+  nao_alocada: { label: "Não coube no orçamento", tone: "danger" },
+};
+
 export default async function RecuperacaoPage({
   searchParams,
 }: {
@@ -65,7 +71,9 @@ export default async function RecuperacaoPage({
         <div>
           <h1 className="text-xl font-semibold">Plano de recuperação financeira</h1>
           <p className="text-sm text-foreground-muted">
-            Baseado na sua renda, gastos essenciais e dívidas ativas cadastradas.
+            Recalculado automaticamente com base nas suas dívidas, renda e gastos atuais. Prioriza juntar
+            dinheiro por {plano.janelaAcumulacaoMeses} mês(es) e quitar à vista — só parcela o que realmente
+            não couber assim.
           </p>
         </div>
         <form method="get" className="flex items-center gap-2">
@@ -86,24 +94,28 @@ export default async function RecuperacaoPage({
         <Card>
           <CardTitle>Sem dívidas ativas</CardTitle>
           <CardDescription>
-            Cadastre suas dívidas na aba <Link href="/dividas" className="text-brand-blue">Dívidas</Link> para gerar
+            Cadastre suas dívidas na aba <Link href="/dividas" className="text-brand-red">Dívidas</Link> para gerar
             o plano.
           </CardDescription>
         </Card>
       ) : (
         <>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-4">
             <Card>
-              <CardDescription>Margem mensal disponível</CardDescription>
+              <CardDescription>Margem mensal (renda − essenciais)</CardDescription>
               <CardTitle className="text-2xl">{formatarMoeda(plano.margemDisponivel)}</CardTitle>
             </Card>
             <Card>
-              <CardDescription>Comprometido no plano</CardDescription>
-              <CardTitle className="text-2xl">{formatarMoeda(plano.comprometidoMensal)}</CardTitle>
+              <CardDescription>Reserva de segurança (mínimo existencial)</CardDescription>
+              <CardTitle className="text-2xl">{formatarMoeda(plano.reservaSeguranca)}</CardTitle>
             </Card>
             <Card>
-              <CardDescription>Saldo livre após o plano</CardDescription>
-              <CardTitle className="text-2xl">{formatarMoeda(plano.saldoLivreAposPlano)}</CardTitle>
+              <CardDescription>Disponível de fato para dívidas</CardDescription>
+              <CardTitle className="text-2xl">{formatarMoeda(plano.margemParaDividas)}</CardTitle>
+            </Card>
+            <Card>
+              <CardDescription>Economia total com descontos à vista</CardDescription>
+              <CardTitle className="text-2xl text-success">{formatarMoeda(plano.totalEconomizadoComDescontos)}</CardTitle>
             </Card>
           </div>
 
@@ -117,44 +129,86 @@ export default async function RecuperacaoPage({
             </Card>
           )}
 
+          {plano.timeline.length > 0 && (
+            <Card>
+              <CardTitle>Linha do tempo</CardTitle>
+              <ol className="mt-3 space-y-3">
+                {Array.from(new Set(plano.timeline.map((p) => p.mes)))
+                  .sort((a, b) => a - b)
+                  .map((mesAtual) => {
+                    const eventosDoMes = plano.timeline.filter((p) => p.mes === mesAtual);
+                    return (
+                      <li key={mesAtual} className="rounded-[var(--radius-md)] border border-border p-3">
+                        <p className="mb-1.5 text-sm font-semibold">Mês {mesAtual}</p>
+                        <ul className="space-y-1 text-sm text-foreground-muted">
+                          {eventosDoMes.map((ev, i) => {
+                            if (ev.evento === "acumulo") {
+                              return (
+                                <li key={i}>
+                                  Guarde o que sobra do mês — total acumulado:{" "}
+                                  <strong className="text-foreground">{formatarMoeda(ev.potAcumulado)}</strong>
+                                </li>
+                              );
+                            }
+                            if (ev.evento === "pagamento_avista") {
+                              return (
+                                <li key={i} className="text-success">
+                                  Pague <strong>{ev.credorNome}</strong> à vista: {formatarMoeda(ev.valor)}
+                                </li>
+                              );
+                            }
+                            return (
+                              <li key={i}>
+                                Comece a parcelar <strong className="text-foreground">{ev.credorNome}</strong> em{" "}
+                                {ev.numParcelas}x de {formatarMoeda(ev.valorParcela)}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </li>
+                    );
+                  })}
+              </ol>
+            </Card>
+          )}
+
           <div className="space-y-3">
-            {plano.simulacoes.map((sim, i) => (
-              <Card key={sim.dividaId}>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <Badge tone="brand">{i + 1}º</Badge>
-                    <Link href={`/dividas/${sim.dividaId}`} className="font-medium text-brand-blue hover:underline">
-                      {sim.credorNome}
-                    </Link>
+            {plano.resultados.map((resultado, i) => {
+              const config = MODALIDADE_LABEL[resultado.modalidadeEscolhida];
+              return (
+                <Card key={resultado.dividaId}>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Badge tone="brand">{i + 1}º</Badge>
+                      <Link href={`/dividas/${resultado.dividaId}`} className="font-medium text-brand-red hover:underline">
+                        {resultado.credorNome}
+                      </Link>
+                    </div>
+                    <Badge tone={config.tone}>{config.label}</Badge>
                   </div>
-                  <Badge tone={sim.alocada ? "success" : "warning"}>
-                    {sim.alocada ? "Cabe no orçamento" : "Não cabe no momento"}
-                  </Badge>
-                </div>
-                <div className="mt-3 grid gap-3 text-sm md:grid-cols-2">
-                  <div className="rounded-[var(--radius-md)] bg-surface-muted p-3">
-                    <p className="text-foreground-muted">À vista</p>
-                    <p className="font-semibold">{formatarMoeda(sim.avista.valorTotal)}</p>
-                    {sim.avista.economia > 0 && (
-                      <p className="text-xs text-success">Economia de {formatarMoeda(sim.avista.economia)}</p>
+                  <p className="mt-2 text-sm text-foreground-muted">{resultado.motivo}</p>
+                  <div className="mt-3 grid gap-3 text-sm md:grid-cols-2">
+                    <div className="rounded-[var(--radius-md)] bg-surface-muted p-3">
+                      <p className="text-foreground-muted">Valor à vista (referência)</p>
+                      <p className="font-semibold">{formatarMoeda(resultado.avista.valorTotal)}</p>
+                      {resultado.avista.economia > 0 && (
+                        <p className="text-xs text-success">Economia de {formatarMoeda(resultado.avista.economia)}</p>
+                      )}
+                    </div>
+                    {resultado.parcelado && (
+                      <div className="rounded-[var(--radius-md)] bg-surface-muted p-3">
+                        <p className="text-foreground-muted">
+                          {resultado.modalidadeEscolhida === "nao_alocada" ? "Simulação no limite" : "Parcelamento"}
+                        </p>
+                        <p className="font-semibold">
+                          {resultado.parcelado.numParcelas}x de {formatarMoeda(resultado.parcelado.valorParcela)}
+                        </p>
+                      </div>
                     )}
                   </div>
-                  <div className="rounded-[var(--radius-md)] bg-surface-muted p-3">
-                    <p className="text-foreground-muted">Parcelado sugerido</p>
-                    {sim.parcelado ? (
-                      <p className="font-semibold">
-                        {sim.parcelado.numParcelas}x de {formatarMoeda(sim.parcelado.valorParcela)}
-                      </p>
-                    ) : (
-                      <p className="text-foreground-muted">—</p>
-                    )}
-                    {sim.motivoNaoAlocada && (
-                      <p className="mt-1 text-xs text-warning">{sim.motivoNaoAlocada}</p>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              );
+            })}
           </div>
 
           <form action={salvarPlanoAction}>

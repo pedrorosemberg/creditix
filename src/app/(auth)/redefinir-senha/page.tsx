@@ -15,7 +15,7 @@ export default function RedefinirSenhaPage() {
     <div className="flex min-h-screen items-center justify-center bg-surface-muted px-4">
       <Card className="w-full max-w-sm">
         <div className="mb-6 text-center">
-          <span className="font-display text-2xl text-brand-blue">Creditix</span>
+          <span className="font-display text-2xl text-brand-red">Creditix</span>
           <p className="mt-1 text-sm text-foreground-muted">Escolha uma nova senha</p>
         </div>
         <form action={formAction} className="space-y-4">

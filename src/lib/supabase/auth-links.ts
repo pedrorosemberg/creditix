@@ -50,3 +50,45 @@ export async function gerarLinkAuth(params: {
 
   return resultado.data.properties.action_link;
 }
+
+/**
+ * Gera os dois links de confirmação de troca de e-mail (Supabase exige
+ * confirmação tanto do e-mail atual quanto do novo — "secure email
+ * change"). Cada link deve ser enviado ao endereço correspondente; a troca
+ * só é efetivada depois que ambos forem clicados.
+ */
+export async function gerarLinksTrocaEmail(params: {
+  emailAtual: string;
+  emailNovo: string;
+}): Promise<{ linkParaEmailAtual: string; linkParaEmailNovo: string }> {
+  const admin = createAdminClient();
+  const redirectTo = `${urlPublicaApp()}/auth/callback?next=${encodeURIComponent("/perfil")}`;
+  const options = { redirectTo };
+
+  const [atual, novo] = await Promise.all([
+    admin.auth.admin.generateLink({
+      type: "email_change_current",
+      email: params.emailAtual,
+      newEmail: params.emailNovo,
+      options,
+    }),
+    admin.auth.admin.generateLink({
+      type: "email_change_new",
+      email: params.emailAtual,
+      newEmail: params.emailNovo,
+      options,
+    }),
+  ]);
+
+  if (atual.error || !atual.data?.properties?.action_link) {
+    throw atual.error ?? new Error("Não foi possível gerar o link de confirmação do e-mail atual.");
+  }
+  if (novo.error || !novo.data?.properties?.action_link) {
+    throw novo.error ?? new Error("Não foi possível gerar o link de confirmação do novo e-mail.");
+  }
+
+  return {
+    linkParaEmailAtual: atual.data.properties.action_link,
+    linkParaEmailNovo: novo.data.properties.action_link,
+  };
+}

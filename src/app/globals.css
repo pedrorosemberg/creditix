@@ -1,8 +1,10 @@
 @import "tailwindcss";
 
 /*
- * Design tokens — identidade visual METADAX
- * Paleta oficial: Preto METADAX #1E1E1E, Branco Gelo #FFFFFF, Azul METADAX #0056B3
+ * Design tokens — identidade visual METADAX, com desvio deliberado
+ * combinado com o cliente: a cor de destaque/ação do Creditix é um
+ * vermelho de alta atenção em vez do Azul METADAX #0056B3 (que segue
+ * padrão em outros produtos da marca). Preto/branco seguem o manual.
  * Tipografia: Inter (texto), Audiowide (somente logotipo)
  * Fonte: manual de marca METADAX (metadax.com.br/manual-de-marca)
  */
@@ -16,9 +18,9 @@
 
   --brand-black: #1e1e1e;
   --brand-white: #ffffff;
-  --brand-blue: #0056b3;
-  --brand-blue-hover: #00408a;
-  --brand-blue-soft: #e6eefb;
+  --brand-red: #dc2626;
+  --brand-red-hover: #b91c1c;
+  --brand-red-soft: #fee2e2;
 
   --success: #157a4a;
   --success-soft: #e3f5ec;
@@ -43,9 +45,9 @@
 
   --color-brand-black: var(--brand-black);
   --color-brand-white: var(--brand-white);
-  --color-brand-blue: var(--brand-blue);
-  --color-brand-blue-hover: var(--brand-blue-hover);
-  --color-brand-blue-soft: var(--brand-blue-soft);
+  --color-brand-red: var(--brand-red);
+  --color-brand-red-hover: var(--brand-red-hover);
+  --color-brand-red-soft: var(--brand-red-soft);
 
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
@@ -70,7 +72,7 @@
     --foreground: #f5f5f5;
     --foreground-muted: #a7abb3;
     --border: #2d2f34;
-    --brand-blue-soft: #0f2440;
+    --brand-red-soft: #3a1015;
     --success-soft: #0f2a1e;
     --warning-soft: #2c2107;
     --danger-soft: #2c1210;

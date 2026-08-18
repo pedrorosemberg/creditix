@@ -3,39 +3,61 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Debt, Expense } from "@/types/database.types";
 import { formatarMoeda } from "@/lib/utils";
 
-export type ItensLembreteMes = {
-  dividasPendentes: Debt[];
-  gastosMensais: Expense[];
+export type PreferenciasLembrete = {
+  lembreteDividas: boolean;
+  lembreteContas: boolean;
+  lembretePreencherTransacoes: boolean;
 };
 
-export async function obterItensDoMes(
+export type ItensLembrete = {
+  dividasPendentes: Debt[];
+  gastosMensais: Expense[];
+  diasSemRegistrarTransacao: number | null;
+};
+
+const LIMIAR_DIAS_SEM_REGISTRO = 5;
+
+export async function obterItensLembrete(
   supabase: SupabaseClient<Database>,
   userId: string,
-): Promise<ItensLembreteMes> {
-  const [{ data: dividas }, { data: gastos }] = await Promise.all([
-    supabase
-      .from("debts")
-      .select("*")
-      .eq("user_id", userId)
-      .in("status", ["ativa", "negociando", "contestada"]),
-    supabase
-      .from("expenses")
-      .select("*")
-      .eq("user_id", userId)
-      .eq("recorrencia", "mensal"),
+  prefs: PreferenciasLembrete,
+): Promise<ItensLembrete> {
+  const [dividasRes, gastosRes, ultimaTransacaoRes] = await Promise.all([
+    prefs.lembreteDividas
+      ? supabase.from("debts").select("*").eq("user_id", userId).in("status", ["ativa", "negociando", "contestada"])
+      : Promise.resolve({ data: [] as Debt[] }),
+    prefs.lembreteContas
+      ? supabase.from("expenses").select("*").eq("user_id", userId).eq("recorrencia", "mensal")
+      : Promise.resolve({ data: [] as Expense[] }),
+    prefs.lembretePreencherTransacoes
+      ? supabase.from("transactions").select("data").eq("user_id", userId).order("data", { ascending: false }).limit(1)
+      : Promise.resolve({ data: [] as { data: string }[] }),
   ]);
 
-  return { dividasPendentes: dividas ?? [], gastosMensais: gastos ?? [] };
+  let diasSemRegistrarTransacao: number | null = null;
+  if (prefs.lembretePreencherTransacoes) {
+    const ultima = ultimaTransacaoRes.data?.[0]?.data;
+    if (!ultima) {
+      diasSemRegistrarTransacao = LIMIAR_DIAS_SEM_REGISTRO + 1;
+    } else {
+      const dias = Math.floor((Date.now() - new Date(ultima).getTime()) / (1000 * 60 * 60 * 24));
+      diasSemRegistrarTransacao = dias >= LIMIAR_DIAS_SEM_REGISTRO ? dias : null;
+    }
+  }
+
+  return {
+    dividasPendentes: dividasRes.data ?? [],
+    gastosMensais: gastosRes.data ?? [],
+    diasSemRegistrarTransacao,
+  };
 }
 
 export function renderLembreteHtml(params: {
   nome: string | null;
-  mesReferencia: Date;
-  itens: ItensLembreteMes;
+  itens: ItensLembrete;
   appUrl: string;
 }): string {
-  const { nome, mesReferencia, itens, appUrl } = params;
-  const mesFormatado = mesReferencia.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  const { nome, itens, appUrl } = params;
 
   const linhasDividas = itens.dividasPendentes
     .map(
@@ -53,30 +75,39 @@ export function renderLembreteHtml(params: {
 
   return `
   <div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:0 auto;color:#1e1e1e">
-    <h1 style="color:#0056B3;font-size:20px;margin-bottom:4px">Creditix</h1>
-    <p style="color:#5b5f66;margin-top:0">Seu resumo de ${mesFormatado}</p>
-    <p>Olá${nome ? `, ${nome}` : ""}. Aqui está o que precisa da sua atenção este mês:</p>
+    <h1 style="color:#DC2626;font-size:20px;margin-bottom:4px">Creditix</h1>
+    <p style="color:#5b5f66;margin-top:0">Seu resumo financeiro</p>
+    <p>Olá${nome ? `, ${nome}` : ""}. Aqui está o que precisa da sua atenção:</p>
+
+    ${
+      itens.diasSemRegistrarTransacao !== null
+        ? `<div style="background:#fee2e2;border-radius:8px;padding:12px 16px;margin:16px 0">
+             <strong>Faz ${itens.diasSemRegistrarTransacao} dias que você não registra uma transação.</strong>
+             <p style="margin:4px 0 0">Manter seus gastos atualizados é o que faz seu plano de recuperação ficar preciso.</p>
+           </div>`
+        : ""
+    }
 
     ${
       itens.dividasPendentes.length > 0
-        ? `<h2 style="font-size:15px;color:#0056B3">Dívidas em aberto</h2>
+        ? `<h2 style="font-size:15px;color:#DC2626">Dívidas em aberto</h2>
            <table style="width:100%;border-collapse:collapse;font-size:14px">${linhasDividas}</table>`
         : ""
     }
 
     ${
       itens.gastosMensais.length > 0
-        ? `<h2 style="font-size:15px;color:#0056B3;margin-top:20px">Contas fixas do mês</h2>
+        ? `<h2 style="font-size:15px;color:#DC2626;margin-top:20px">Contas fixas do mês</h2>
            <table style="width:100%;border-collapse:collapse;font-size:14px">${linhasGastos}</table>`
         : ""
     }
 
     <p style="margin-top:24px">
-      <a href="${appUrl}/dashboard" style="background:#0056B3;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none;font-weight:600">Ver painel completo</a>
+      <a href="${appUrl}/dashboard" style="background:#DC2626;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none;font-weight:600">Ver painel completo</a>
     </p>
     <p style="margin-top:24px;font-size:12px;color:#5b5f66">
-      Você recebeu este e-mail porque os lembretes mensais estão ativados na sua conta Creditix. Você pode
-      desativá-los a qualquer momento em Configurações.
+      Você recebeu este e-mail porque os lembretes estão ativados na sua conta Creditix. Ajuste o conteúdo e a
+      frequência a qualquer momento em Lembretes.
     </p>
   </div>`;
 }

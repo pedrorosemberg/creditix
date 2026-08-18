@@ -65,7 +65,7 @@ export default async function DividasPage() {
               {dividas.map((d) => (
                 <tr key={d.id} className="border-b border-border last:border-0 hover:bg-surface-muted">
                   <td className="px-4 py-3">
-                    <Link href={`/dividas/${d.id}`} className="font-medium text-brand-blue hover:underline">
+                    <Link href={`/dividas/${d.id}`} className="font-medium text-brand-red hover:underline">
                       {d.credor_nome}
                     </Link>
                   </td>

@@ -29,7 +29,7 @@ export function Sidebar() {
   return (
     <aside className="hidden w-60 shrink-0 border-r border-border bg-surface md:flex md:flex-col">
       <div className="flex h-16 items-center gap-2 border-b border-border px-5">
-        <span className="font-display text-lg tracking-wide text-brand-blue">Creditix</span>
+        <span className="font-display text-lg tracking-wide text-brand-red">Creditix</span>
       </div>
       <nav className="flex-1 space-y-1 p-3">
         {ITEMS.map(({ href, label, icon: Icon }) => {
@@ -41,7 +41,7 @@ export function Sidebar() {
               className={cn(
                 "flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium transition-colors",
                 active
-                  ? "bg-brand-blue-soft text-brand-blue"
+                  ? "bg-brand-red-soft text-brand-red"
                   : "text-foreground-muted hover:bg-surface-muted hover:text-foreground",
               )}
             >

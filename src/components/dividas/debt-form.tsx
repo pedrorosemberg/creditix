@@ -107,7 +107,7 @@ export function DebtForm({
           name="negativado"
           type="checkbox"
           defaultChecked={divida?.negativado ?? true}
-          className="h-4 w-4 rounded border-border text-brand-blue focus:ring-brand-blue"
+          className="h-4 w-4 rounded border-border text-brand-red focus:ring-brand-red"
         />
         <Label htmlFor="negativado" className="mb-0">
           Dívida negativada

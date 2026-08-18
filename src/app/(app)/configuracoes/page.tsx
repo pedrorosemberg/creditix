@@ -3,6 +3,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 import { atualizarPerfilAction } from "./actions";
+import { PerfilForms } from "./perfil-forms";
 
 export default async function ConfiguracoesPage() {
   const supabase = await createClient();
@@ -10,6 +11,12 @@ export default async function ConfiguracoesPage() {
     data: { user },
   } = await supabase.auth.getUser();
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", user!.id).maybeSingle();
+
+  let avatarSignedUrl: string | null = null;
+  if (profile?.avatar_url) {
+    const { data } = await supabase.storage.from("avatars").createSignedUrl(profile.avatar_url, 60 * 60);
+    avatarSignedUrl = data?.signedUrl ?? null;
+  }
 
   return (
     <div className="space-y-6">
@@ -39,6 +46,8 @@ export default async function ConfiguracoesPage() {
           </div>
         </form>
       </Card>
+
+      <PerfilForms avatarSignedUrl={avatarSignedUrl} emailAtual={user?.email ?? ""} />
 
       <Card className="border-border">
         <CardTitle>Privacidade e dados</CardTitle>

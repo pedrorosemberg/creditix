@@ -5,7 +5,7 @@ type Variant = "primary" | "secondary" | "ghost" | "danger";
 type Size = "sm" | "md" | "lg";
 
 const variantClasses: Record<Variant, string> = {
-  primary: "bg-brand-blue text-brand-white hover:bg-brand-blue-hover",
+  primary: "bg-brand-red text-brand-white hover:bg-brand-red-hover",
   secondary:
     "bg-surface text-foreground border border-border hover:bg-surface-muted",
   ghost: "bg-transparent text-foreground hover:bg-surface-muted",
@@ -26,7 +26,7 @@ export const Button = forwardRef<
     <button
       ref={ref}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2",
+        "inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red focus-visible:ring-offset-2",
         variantClasses[variant],
         sizeClasses[size],
         className,

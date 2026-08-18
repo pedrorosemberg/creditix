@@ -63,11 +63,11 @@ function CallbackInner() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-surface-muted px-4">
       <Card className="w-full max-w-sm text-center">
-        <span className="font-display text-2xl text-brand-blue">Creditix</span>
+        <span className="font-display text-2xl text-brand-red">Creditix</span>
         {erro ? (
           <>
             <p className="mt-4 text-sm text-danger">{erro}</p>
-            <a href="/login" className="mt-3 inline-block text-sm text-brand-blue hover:underline">
+            <a href="/login" className="mt-3 inline-block text-sm text-brand-red hover:underline">
               Voltar para o login
             </a>
           </>
@@ -85,7 +85,7 @@ export default function AuthCallbackPage() {
       fallback={
         <div className="flex min-h-screen items-center justify-center bg-surface-muted px-4">
           <Card className="w-full max-w-sm text-center">
-            <span className="font-display text-2xl text-brand-blue">Creditix</span>
+            <span className="font-display text-2xl text-brand-red">Creditix</span>
           </Card>
         </div>
       }

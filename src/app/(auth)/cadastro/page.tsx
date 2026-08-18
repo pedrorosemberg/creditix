@@ -16,7 +16,7 @@ export default function CadastroPage() {
     <div className="flex min-h-screen items-center justify-center bg-surface-muted px-4">
       <Card className="w-full max-w-sm">
         <div className="mb-6 text-center">
-          <span className="font-display text-2xl text-brand-blue">Creditix</span>
+          <span className="font-display text-2xl text-brand-red">Creditix</span>
           <p className="mt-1 text-sm text-foreground-muted">Crie sua conta pessoal e privada</p>
         </div>
         {state?.success ? (
@@ -47,7 +47,7 @@ export default function CadastroPage() {
         )}
         <p className="mt-4 text-center text-sm text-foreground-muted">
           Já tem conta?{" "}
-          <Link href="/login" className="font-medium text-brand-blue hover:underline">
+          <Link href="/login" className="font-medium text-brand-red hover:underline">
             Entrar
           </Link>
         </p>

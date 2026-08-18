@@ -20,13 +20,20 @@ export type TipoTransacaoDb = "receita" | "despesa" | "pagamento_divida";
 export type ModalidadePagamentoDb = "avista" | "parcelado";
 export type StatusPlanoDb = "simulado" | "proposto" | "aceito" | "recusado";
 export type ProvedorIaDb = "ollama" | "gemini" | "local";
+export type FrequenciaLembreteDb = "semanal" | "quinzenal" | "mensal";
 
 export type Profile = {
   id: string;
   display_name: string | null;
   renda_mensal: number | null;
+  avatar_url: string | null;
   lembrete_email: boolean;
   lembrete_dia_mes: number;
+  lembrete_frequencia: FrequenciaLembreteDb;
+  lembrete_dia_semana: number;
+  lembrete_dividas: boolean;
+  lembrete_contas: boolean;
+  lembrete_preencher_transacoes: boolean;
   created_at: string;
   updated_at: string;
 };

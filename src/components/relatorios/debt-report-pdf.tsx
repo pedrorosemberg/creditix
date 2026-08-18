@@ -6,9 +6,9 @@ import { fundamento } from "@/lib/legal/fundamentos";
 
 const styles = StyleSheet.create({
   page: { padding: 32, fontSize: 10, fontFamily: "Helvetica", color: "#1e1e1e" },
-  title: { fontSize: 16, marginBottom: 4, color: "#0056B3" },
+  title: { fontSize: 16, marginBottom: 4, color: "#DC2626" },
   subtitle: { fontSize: 10, marginBottom: 16, color: "#5b5f66" },
-  sectionTitle: { fontSize: 12, marginTop: 14, marginBottom: 6, color: "#0056B3" },
+  sectionTitle: { fontSize: 12, marginTop: 14, marginBottom: 6, color: "#DC2626" },
   row: { flexDirection: "row", justifyContent: "space-between", marginBottom: 3 },
   label: { color: "#5b5f66" },
   value: { fontWeight: 700 },

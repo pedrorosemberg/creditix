@@ -22,7 +22,7 @@ export function AnaliseIaPainel({
     <Card>
       <div className="mb-3 flex items-center justify-between">
         <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-brand-blue" /> Parecer por IA
+          <Sparkles className="h-4 w-4 text-brand-red" /> Parecer por IA
         </CardTitle>
         <form action={formAction}>
           <input type="hidden" name="debt_id" value={dividaId} />
