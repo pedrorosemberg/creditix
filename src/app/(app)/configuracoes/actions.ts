@@ -88,10 +88,19 @@ export async function atualizarAvatarAction(_prev: PerfilState, formData: FormDa
     return { error: "A imagem deve ter no máximo 3MB." };
   }
 
-  const caminho = `${user.id}/avatar.${extensao}`;
+  // Nome único por upload (em vez de sempre "avatar.<ext>" com upsert):
+  // sobrescrever o mesmo caminho pode servir a versão antiga em cache por
+  // um tempo no CDN do Storage, mesmo com uma signed URL nova. Um caminho
+  // novo elimina esse problema de vez.
+  const { data: perfilAtual } = await supabase
+    .from("profiles")
+    .select("avatar_url")
+    .eq("id", user.id)
+    .maybeSingle();
+  const caminho = `${user.id}/avatar-${Date.now()}.${extensao}`;
   const { error: uploadError } = await supabase.storage
     .from("avatars")
-    .upload(caminho, arquivo, { upsert: true, contentType: arquivo.type });
+    .upload(caminho, arquivo, { contentType: arquivo.type });
   if (uploadError) {
     await registrarLog(supabase, user.id, {
       tipo: "erro",
@@ -112,6 +121,10 @@ export async function atualizarAvatarAction(_prev: PerfilState, formData: FormDa
       descricao: updateError.message,
     });
     return { error: "Imagem enviada, mas não foi possível salvar no perfil." };
+  }
+
+  if (perfilAtual?.avatar_url && perfilAtual.avatar_url !== caminho) {
+    await supabase.storage.from("avatars").remove([perfilAtual.avatar_url]);
   }
 
   await registrarLog(supabase, user.id, { tipo: "conta", titulo: "Foto de perfil atualizada" });

@@ -13,6 +13,7 @@ import {
   MessageCircle,
   ScrollText,
   FileBarChart,
+  LineChart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +22,7 @@ const ITEMS = [
   { href: "/dividas", label: "Dívidas", icon: Landmark },
   { href: "/transacoes", label: "Transações", icon: ArrowLeftRight },
   { href: "/orcamento", label: "Orçamento", icon: Wallet },
+  { href: "/analises", label: "Análises", icon: LineChart },
   { href: "/recuperacao", label: "Recuperação financeira", icon: LifeBuoy },
   { href: "/relatorios", label: "Relatórios", icon: FileBarChart },
   { href: "/chat", label: "Chat com IA", icon: MessageCircle },

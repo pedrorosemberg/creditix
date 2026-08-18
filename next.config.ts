@@ -1,11 +1,26 @@
 import type { NextConfig } from "next";
 
+// Origem do Supabase (cloud ou self-hosted) precisa estar liberada no
+// img-src — é de lá que vêm as signed URLs das fotos de perfil
+// (Storage). Sem isso o navegador bloqueia a imagem silenciosamente por
+// CSP: a Server Action retorna sucesso normalmente, mas a foto nunca
+// aparece (nenhum erro visível, só o <img> quebrado).
+function origemSupabase(): string | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url) return null;
+  try {
+    return new URL(url).origin;
+  } catch {
+    return null;
+  }
+}
+
 const csp = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
-  "img-src 'self' data: https://cdn.metadax.com.br",
+  `img-src 'self' data: https://cdn.metadax.com.br${origemSupabase() ? ` ${origemSupabase()}` : ""}`,
   "connect-src 'self'",
   "frame-ancestors 'none'",
   "base-uri 'self'",
