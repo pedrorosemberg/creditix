@@ -82,8 +82,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.PROMOTE_PAT }}
         run: |
-          gh label create "criticidade:feature" --color "1D76DB" --description "Passa pela suíte completa de testes" --force
-          gh label create "criticidade:hotfix" --color "D93F0B" --description "Correção/emergência — pula os gates lentos (carga, performance, E2E)" --force
+          if ! gh label create "criticidade:feature" --color "1D76DB" --description "Passa pela suíte completa de testes" --force \
+            || ! gh label create "criticidade:hotfix" --color "D93F0B" --description "Correção/emergência — pula os gates lentos (carga, performance, E2E)" --force; then
+            echo "::error::Não foi possível criar/atualizar as labels — o PROMOTE_PAT provavelmente não tem a permissão 'Issues: Read and write' (o GitHub gerencia labels pela API de Issues, mesmo quando aplicadas numa PR). Veja docs/ENVIRONMENTS.md#1-crie-o-secret-promote_pat."
+            exit 1
+          fi
 
       - name: Criar ou atualizar a Pull Request de promoção
         if: steps.classificacao.outputs.label != ''

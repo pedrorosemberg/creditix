@@ -75,7 +75,11 @@ que a PR que ele abre e o merge que ele faz disparem o `Test Suite` e o deploy n
 1. Crie um **fine-grained Personal Access Token** em
    [github.com/settings/tokens?type=beta](https://github.com/settings/tokens?type=beta):
    - **Repository access**: só `pedrorosemberg/creditix`.
-   - **Permissions**: `Contents` (Read and write), `Pull requests` (Read and write), `Metadata` (Read-only).
+   - **Permissions**: `Contents` (Read and write), `Pull requests` (Read and write), `Issues` (Read and
+     write — **necessário mesmo só usando PRs**: o GitHub gerencia labels pela API de Issues, não de Pull
+     Requests, mesmo quando o label é aplicado numa PR; sem essa permissão, `gh label create`/`gh pr edit
+     --add-label` falham com "HTTP 403: Resource not accessible by personal access token" — confirmado na
+     primeira execução real da esteira), `Metadata` (Read-only).
    - Prazo de expiração: defina um lembrete para renovar (ou o mais longo permitido pela sua organização).
 2. **Settings → Secrets and variables → Actions → New repository secret**: nome `PROMOTE_PAT`, valor o
    token gerado.
