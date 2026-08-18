@@ -19,13 +19,18 @@ direto), com merge automático assim que os checks obrigatórios passarem. Isso 
 ## Promoção automática — como funciona
 
 1. Você faz merge de uma feature/fix em `dev` normalmente (PR de uma branch de feature).
-2. O workflow **CI** roda em `dev`. Se passar, o workflow **Promover ambiente** dispara automaticamente
-   (`workflow_run` do CI), classifica os commits que estão sendo promovidos como `criticidade:feature` ou
-   `criticidade:hotfix` (ver seção abaixo), abre a PR `dev → hmg` já com a label certa, e liga auto-merge.
+2. O workflow **CI** roda em `dev`. No último step, se tudo passou, ele mesmo dispara o workflow
+   **Promover ambiente** (`gh workflow run promote.yml`) — um disparo explícito de `workflow_dispatch`, não
+   um evento push/pull_request, então funciona mesmo vindo do `GITHUB_TOKEN` padrão do próprio CI (a
+   restrição do GitHub contra o `GITHUB_TOKEN` disparar outros workflows só vale para eventos
+   push/pull_request, não para chamadas explícitas de API como essa). **Promover ambiente** então
+   classifica os commits que estão sendo promovidos como `criticidade:feature` ou `criticidade:hotfix` (ver
+   seção abaixo), abre a PR `dev → hmg` já com a label certa, e liga auto-merge.
 3. O workflow **Test Suite** roda na PR. Quando todos os checks obrigatórios passam (e a branch protection
    permite), o GitHub mergeia a PR sozinho.
 4. O merge em `hmg` dispara o deploy de `hmg` e, em seguida, o workflow **CI** roda de novo em `hmg` —
-   disparando **Promover ambiente** outra vez, agora para a PR `hmg → prod`, repetindo o ciclo.
+   disparando **Promover ambiente** outra vez (mesmo mecanismo), agora para a PR `hmg → prod`, repetindo o
+   ciclo.
 5. Depois de cada merge em `hmg` ou `prod`, o workflow **Verificação pós-deploy** espera o deploy
    terminar e confirma que o ambiente resultante está de fato no ar e saudável.
 

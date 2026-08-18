@@ -18,6 +18,13 @@ concurrency:
 jobs:
   lint-typecheck-test-build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Só pra disparar "Promover ambiente" via workflow_dispatch no fim
+      # deste job (ver último step) — uma chamada explícita de API não sofre
+      # a restrição do GITHUB_TOKEN de não disparar outros workflows (essa
+      # restrição vale só pra eventos push/pull_request causados por ele).
+      actions: write
     steps:
       - uses: actions/checkout@v4
 
@@ -57,3 +64,17 @@ jobs:
       - name: Auditoria de dependências (falhas críticas/altas)
         run: npm audit --audit-level=high
         continue-on-error: true
+
+      - name: Disparar promoção automática (dev->hmg ou hmg->prod)
+        # Só em push (não em PR) e só nas branches de origem de uma
+        # promoção. O workflow_run como gatilho pra isso se mostrou
+        # pouco confiável neste ambiente (fires instantaneamente, sem
+        # esperar este job terminar) — chamar workflow_dispatch
+        # explicitamente aqui é o jeito documentado e confiável de um
+        # workflow disparar outro.
+        if: github.event_name == 'push' && (github.ref_name == 'dev' || github.ref_name == 'hmg')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.ref_name }}" = "dev" ]; then DESTINO="hmg"; else DESTINO="prod"; fi
+          gh workflow run promote.yml --ref "${{ github.ref_name }}" -f destino="$DESTINO"

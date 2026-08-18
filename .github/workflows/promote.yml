@@ -1,22 +1,25 @@
 name: Promover ambiente
 
-# Abre (ou atualiza) automaticamente a PR de promoção dev->hmg ou hmg->prod
-# depois que o CI passa na branch de origem, classifica a urgência
-# (hotfix/emergencial vs. feature normal) pelos commits que estão sendo
-# promovidos, e liga auto-merge — a PR mergeia sozinha assim que os checks
-# obrigatórios da branch de destino (workflows CI e Test Suite) passarem.
-# Também pode ser disparada manualmente.
+# Abre (ou atualiza) automaticamente a PR de promoção dev->hmg ou hmg->prod,
+# classifica a urgência (hotfix/emergencial vs. feature normal) pelos
+# commits que estão sendo promovidos, e liga auto-merge — a PR mergeia
+# sozinha assim que os checks obrigatórios da branch de destino (workflows
+# CI e Test Suite) passarem.
+#
+# Disparado automaticamente pelo último step de ci.yml quando o CI passa em
+# dev ou hmg (via "gh workflow run", não por um evento push/pull_request —
+# só assim o GITHUB_TOKEN de lá pode acionar este workflow). Também pode
+# ser disparado manualmente (aba Actions -> Promover ambiente -> Run
+# workflow).
 #
 # Requer o secret PROMOTE_PAT (um Personal Access Token, não o GITHUB_TOKEN
-# padrão) porque o GitHub não dispara outros workflows a partir de eventos
-# (push/pull_request) causados pelo próprio GITHUB_TOKEN — sem isso, a PR
-# seria criada mas o Test Suite nunca rodaria automaticamente. Ver
-# docs/ENVIRONMENTS.md para o passo a passo de criação do token.
+# padrão) para criar a PR e fazer o merge, porque o GitHub não dispara
+# outros workflows a partir de eventos (push/pull_request) causados pelo
+# próprio GITHUB_TOKEN — sem isso, a PR seria criada mas o Test Suite nunca
+# rodaria automaticamente. Ver docs/ENVIRONMENTS.md para o passo a passo de
+# criação do token.
 
 on:
-  workflow_run:
-    workflows: ["CI"]
-    types: [completed]
   workflow_dispatch:
     inputs:
       destino:
@@ -27,10 +30,6 @@ on:
 
 jobs:
   abrir-pr:
-    if: >
-      ${{ github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-      contains(fromJSON('["dev", "hmg"]'), github.event.workflow_run.head_branch)) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -46,16 +45,9 @@ jobs:
       - name: Definir origem/destino
         id: branches
         env:
-          DESTINO_MANUAL: ${{ inputs.destino }}
-          ORIGEM_AUTOMATICA: ${{ github.event.workflow_run.head_branch }}
+          DESTINO: ${{ inputs.destino }}
         run: |
-          if [ -n "$DESTINO_MANUAL" ]; then
-            DESTINO="$DESTINO_MANUAL"
-            if [ "$DESTINO" = "hmg" ]; then ORIGEM="dev"; else ORIGEM="hmg"; fi
-          else
-            ORIGEM="$ORIGEM_AUTOMATICA"
-            if [ "$ORIGEM" = "dev" ]; then DESTINO="hmg"; else DESTINO="prod"; fi
-          fi
+          if [ "$DESTINO" = "hmg" ]; then ORIGEM="dev"; else ORIGEM="hmg"; fi
           echo "origem=$ORIGEM" >> "$GITHUB_OUTPUT"
           echo "destino=$DESTINO" >> "$GITHUB_OUTPUT"
 
