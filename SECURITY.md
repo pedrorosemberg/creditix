@@ -49,6 +49,14 @@ detalhes e passos de reprodução. Responderemos o mais rápido possível.
   em toda build de CI e falha se os prompts de guardrail da IA (`src/lib/ai/chat.ts`) ou textos do motor
   de análise de dívidas aparecerem no JS enviado ao navegador — regressão automática caso algum Client
   Component passe a importar esses módulos por engano.
+- **Painel admin_global sem acesso a dados financeiros:** `/admin` (restrito a quem está na tabela
+  `admin_users`) só expõe dados agregados de conta (e-mail, data de cadastro, contagem de indicações) —
+  nunca dívidas, transações ou qualquer valor financeiro de outros usuários. A checagem de permissão mora
+  no próprio banco (`is_admin_global()`, `security definer`), não só no código do app — ver
+  `docs/ARCHITECTURE.md#papel-admin_global`.
+- **Observabilidade sem PII:** Vercel Analytics e o Grafana Faro (opcional) coletam só métricas agregadas
+  de navegação, performance e erros — nunca e-mail, nome ou dado financeiro. Ver
+  `docs/OBSERVABILIDADE.md`.
 
 ## Autenticação
 

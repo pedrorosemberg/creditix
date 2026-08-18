@@ -10,7 +10,11 @@
 - **Resend** — envio de e-mails transacionais (lembretes mensais).
 - **Ollama / Gemini** — análise por IA, atrás de uma interface plugável (`src/lib/ai/provider.ts`).
 - **Tailwind CSS v4** com tokens de marca da METADAX (`src/app/globals.css`).
-- **Vitest** para testes unitários dos motores de negócio.
+- **Vitest** para testes unitários dos motores de negócio; **Playwright** para smoke tests E2E contra
+  ambientes já implantados (ver `docs/ENVIRONMENTS.md`).
+- **Vercel Analytics** e **Grafana Cloud** (opcional) para observabilidade de produto — ver
+  `docs/OBSERVABILIDADE.md`.
+- **driver.js** para o tour de boas-vindas guiado no primeiro acesso.
 
 ## Estrutura de pastas
 
@@ -54,6 +58,24 @@ docker/                    # stack self-hosted (Postgres + GoTrue + PostgREST + 
 4. Na aba **Recuperação**, todas as dívidas ativas do usuário entram em `montarPlanoRecuperacao()`, que
    aloca a margem mensal (renda − gastos essenciais) entre elas conforme a estratégia escolhida
    (avalanche, bola de neve ou jurídica primeiro).
+
+## Papel admin_global
+
+`/admin` (visível no menu só para quem tem a permissão) lista, para o time interno, dados agregados de
+conta de todos os usuários — data de cadastro, último acesso, e-mail, ID e quantas indicações cada um já
+fez (mesma separação pendente/aceita/quitando dívidas já publicada em `/convite`). Nunca expõe dívidas,
+transações ou qualquer dado financeiro de outros usuários — a própria função no banco
+(`admin_listar_usuarios()`, `supabase/migrations/20260827000000_admin_global.sql`) só retorna esses
+agregados.
+
+A permissão vive numa tabela dedicada (`admin_users`), sem nenhuma policy para `authenticated`/`anon` —
+igual ao padrão já usado em `referrals` — e é checada dentro da própria função `security definer`
+(`is_admin_global()`), não só no código do app. Para conceder a alguém:
+
+```sql
+insert into public.admin_users (user_id)
+select id from auth.users where email = 'alguem@metadax.com.br';
+```
 
 ## Por que self-hosted por padrão
 
