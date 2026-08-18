@@ -1,14 +1,15 @@
 import type { HTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
-type Tone = "neutral" | "success" | "warning" | "danger" | "brand";
+export type Tone = "neutral" | "success" | "warning" | "danger" | "brand" | "info";
 
-const toneClasses: Record<Tone, string> = {
+export const toneClasses: Record<Tone, string> = {
   neutral: "bg-surface-muted text-foreground-muted",
   success: "bg-success-soft text-success",
   warning: "bg-warning-soft text-warning",
   danger: "bg-danger-soft text-danger",
   brand: "bg-brand-red-soft text-brand-red",
+  info: "bg-info-soft text-info",
 };
 
 export function Badge({

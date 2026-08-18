@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResendClient, REMETENTE_PADRAO } from "@/lib/email/resend";
 import { obterItensLembrete, renderLembreteHtml } from "@/lib/email/lembrete-mensal";
+import { registrarLog } from "@/lib/activity-log";
 import type { FrequenciaLembreteDb } from "@/types/database.types";
 
 export const dynamic = "force-dynamic";
@@ -120,6 +121,11 @@ export async function GET(request: Request) {
         destinatario: email,
         status: resend ? "enviado" : "resend_nao_configurado",
         resend_id: resendId,
+      });
+      await registrarLog(admin, perfil.id, {
+        tipo: "email",
+        titulo: "Lembrete mensal enviado por e-mail",
+        descricao: `Enviado para ${email} (evento agendado, disparado pelo cron diário).`,
       });
       enviados += 1;
     } catch {

@@ -2,6 +2,7 @@ import { Bot, ShieldCheck, UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Markdown } from "@/components/ui/markdown";
 import { cn } from "@/lib/utils";
 import { ChatForm } from "./chat-form";
 import { limparConversaAction } from "./actions";
@@ -72,11 +73,11 @@ export default async function ChatPage() {
                 </div>
                 <div
                   className={cn(
-                    "max-w-[85%] whitespace-pre-wrap rounded-[var(--radius-md)] px-3 py-2 text-sm",
+                    "max-w-[85%] rounded-[var(--radius-md)] px-3 py-2 text-sm",
                     m.role === "usuario" ? "bg-brand-red-soft text-foreground" : "bg-surface-muted text-foreground",
                   )}
                 >
-                  {m.content}
+                  {m.role === "usuario" ? <p className="whitespace-pre-wrap">{m.content}</p> : <Markdown>{m.content}</Markdown>}
                 </div>
               </div>
             ))}

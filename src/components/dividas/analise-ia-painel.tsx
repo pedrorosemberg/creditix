@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { Sparkles } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Markdown } from "@/components/ui/markdown";
 import { gerarAnaliseIaAction, type AnaliseIaState } from "@/app/(app)/dividas/ia-actions";
 import type { AiAnalysis } from "@/types/database.types";
 
@@ -33,8 +34,8 @@ export function AnaliseIaPainel({
       </div>
       {state?.error && <p className="text-sm text-danger">{state.error}</p>}
       {analiseExistente ? (
-        <div className="whitespace-pre-wrap rounded-[var(--radius-md)] bg-surface-muted p-4 text-sm">
-          {analiseExistente.content}
+        <div className="rounded-[var(--radius-md)] bg-surface-muted p-4">
+          <Markdown>{analiseExistente.content}</Markdown>
         </div>
       ) : (
         !state?.error && (

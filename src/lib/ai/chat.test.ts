@@ -9,6 +9,10 @@ const contextoBase: ContextoFinanceiroChat = {
   quantidadeDividasAtivas: 2,
   totalDividasAtivas: 3000,
   observacoesPlano: [],
+  dividas: [
+    { credorNome: "Banco A", valorAtual: 2000 },
+    { credorNome: "Banco B", valorAtual: 1000 },
+  ],
 };
 
 describe("montarPromptChat", () => {
@@ -40,5 +44,12 @@ describe("montarPromptChat", () => {
     });
     expect(prompt.indexOf("Quanto devo?")).toBeLessThan(prompt.indexOf("E agora?"));
     expect(prompt.trim().endsWith("Usuário: E agora?\nAssistente:")).toBe(true);
+  });
+
+  it("lista as dívidas já ordenadas e informa qual é a mais barata e a mais cara, pré-calculado", () => {
+    const prompt = montarPromptChat({ contexto: contextoBase, historico: [], novaMensagem: "Qual a dívida mais barata?" });
+    expect(prompt.indexOf("Banco B")).toBeLessThan(prompt.indexOf("Banco A"));
+    expect(prompt).toContain('A dívida mais barata é "Banco B"');
+    expect(prompt).toContain('A mais cara é "Banco A"');
   });
 });

@@ -1,16 +1,18 @@
 import type { createClient } from "@/lib/supabase/server";
+import type { TipoLogDb } from "@/types/database.types";
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
 /**
- * Registra uma entrada na aba "Logs" do usuário (mudanças na conta e erros
- * de sistema, como falhas da IA) — best-effort: uma falha ao gravar o log
- * nunca deve derrubar a ação que estava sendo executada.
+ * Registra uma entrada na aba "Logs" do usuário (mudanças na conta, erros
+ * de sistema, avisos, informações, exclusões, e-mails enviados e eventos
+ * agendados/assíncronos como o lembrete mensal) — best-effort: uma falha
+ * ao gravar o log nunca deve derrubar a ação que estava sendo executada.
  */
 export async function registrarLog(
   supabase: SupabaseClient,
   userId: string,
-  params: { tipo: "conta" | "erro"; titulo: string; descricao?: string | null },
+  params: { tipo: TipoLogDb; titulo: string; descricao?: string | null },
 ) {
   try {
     await supabase.from("activity_logs").insert({

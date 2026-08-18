@@ -1,3 +1,5 @@
+import { formatarMoeda } from "@/lib/utils";
+
 /**
  * Guardrails do chat de IA, embutidos diretamente no prompt como defesa em
  * profundidade — a proteção real é arquitetural: o provedor de IA só
@@ -24,22 +26,33 @@ export type ContextoFinanceiroChat = {
   quantidadeDividasAtivas: number;
   totalDividasAtivas: number;
   observacoesPlano: string[];
+  dividas: { credorNome: string; valorAtual: number }[];
 };
 
 export type MensagemHistorico = { role: "usuario" | "assistente"; content: string };
 
-function formatarMoedaSimples(valor: number): string {
-  return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
-
 function montarResumoContexto(contexto: ContextoFinanceiroChat): string {
   const linhas = [
-    `- Renda mensal: ${formatarMoedaSimples(contexto.rendaMensal)}`,
-    `- Gastos essenciais mensais: ${formatarMoedaSimples(contexto.gastosEssenciais)}`,
-    `- Reserva de segurança (mínimo existencial, nunca usar para dívidas): ${formatarMoedaSimples(contexto.reservaSeguranca)}`,
-    `- Disponível de fato para quitar dívidas: ${formatarMoedaSimples(contexto.margemParaDividas)}`,
-    `- Dívidas ativas: ${contexto.quantidadeDividasAtivas} (soma de ${formatarMoedaSimples(contexto.totalDividasAtivas)})`,
+    `- Renda mensal: ${formatarMoeda(contexto.rendaMensal)}`,
+    `- Gastos essenciais mensais: ${formatarMoeda(contexto.gastosEssenciais)}`,
+    `- Reserva de segurança (mínimo existencial, nunca usar para dívidas): ${formatarMoeda(contexto.reservaSeguranca)}`,
+    `- Disponível de fato para quitar dívidas: ${formatarMoeda(contexto.margemParaDividas)}`,
+    `- Dívidas ativas: ${contexto.quantidadeDividasAtivas} (soma de ${formatarMoeda(contexto.totalDividasAtivas)})`,
   ];
+
+  if (contexto.dividas.length > 0) {
+    const ordenadas = [...contexto.dividas].sort((a, b) => a.valorAtual - b.valorAtual);
+    linhas.push(
+      "- Lista de dívidas ativas, já ordenada da mais barata para a mais cara (use exatamente esta ordem para responder qual é a mais barata/mais cara — não recalcule):",
+    );
+    for (const [indice, divida] of ordenadas.entries()) {
+      linhas.push(`  ${indice + 1}. ${divida.credorNome}: ${formatarMoeda(divida.valorAtual)}`);
+    }
+    linhas.push(
+      `- A dívida mais barata é "${ordenadas[0].credorNome}" (${formatarMoeda(ordenadas[0].valorAtual)}). A mais cara é "${ordenadas[ordenadas.length - 1].credorNome}" (${formatarMoeda(ordenadas[ordenadas.length - 1].valorAtual)}).`,
+    );
+  }
+
   if (contexto.observacoesPlano.length > 0) {
     linhas.push(`- Observações do plano de recuperação atual: ${contexto.observacoesPlano.join(" | ")}`);
   }

@@ -28,6 +28,8 @@
   --warning-soft: #fdf1de;
   --danger: #b3261e;
   --danger-soft: #fbe9e8;
+  --info: #1d4ed8;
+  --info-soft: #e5edfc;
 
   --radius-sm: 0.375rem;
   --radius-md: 0.625rem;
@@ -55,6 +57,8 @@
   --color-warning-soft: var(--warning-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
 
   --font-sans: var(--font-inter);
   --font-display: var(--font-audiowide);
@@ -76,6 +80,7 @@
     --success-soft: #0f2a1e;
     --warning-soft: #2c2107;
     --danger-soft: #2c1210;
+    --info-soft: #101d33;
   }
 }
 

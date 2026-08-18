@@ -22,7 +22,7 @@ export type StatusPlanoDb = "simulado" | "proposto" | "aceito" | "recusado";
 export type ProvedorIaDb = "ollama" | "gemini" | "local";
 export type FrequenciaLembreteDb = "semanal" | "quinzenal" | "mensal";
 export type PapelMensagemChatDb = "usuario" | "assistente";
-export type TipoLogDb = "conta" | "erro";
+export type TipoLogDb = "conta" | "erro" | "aviso" | "info" | "exclusao" | "email" | "agendado";
 
 export type Profile = {
   id: string;

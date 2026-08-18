@@ -59,6 +59,7 @@ async function montarContexto(
     quantidadeDividasAtivas: dividasParaPlano.length,
     totalDividasAtivas: dividasParaPlano.reduce((acc, d) => acc + d.valorAtual, 0),
     observacoesPlano: plano.observacoes,
+    dividas: dividasParaPlano.map((d) => ({ credorNome: d.credorNome, valorAtual: d.valorAtual })),
   };
 }
 
