@@ -59,9 +59,16 @@ shape do serviço (passo 5) conforme o modelo:
 
 | Modelo | Memória recomendada (`--memory`) | CPU recomendada (`--cpu`) |
 |---|---|---|
-| `qwen2.5:0.5b` (mais rápido, respostas simples) | `1Gi` | `1` |
-| `qwen2.5:3b` / `llama3.2:3b` (padrão sugerido, bom equilíbrio) | `4Gi` | `2` |
-| `llama3.1` (8B, melhores respostas, mais lento em CPU) | `8Gi` | `4` |
+| `qwen2.5:0.5b` (mais rápido, respostas simples) | `2Gi` | `1` |
+| `qwen2.5:3b` / `llama3.2:3b` (padrão sugerido, bom equilíbrio) | `8Gi` | `4` |
+| `llama3.1` (8B, melhores respostas, mais lento em CPU) | `12Gi` | `4` |
+
+Os valores acima já incluem margem de segurança: na prática, `qwen2.5:3b`
+com `--memory 4Gi` chegou a ultrapassar o limite durante a inferência
+("Memory limit of 4096 MiB exceeded with 4101 MiB used") — o Cloud Run
+mata o container nesse caso (o cliente recebe 503). O contexto do Ollama
+(`OLLAMA_CONTEXT_LENGTH`, cache KV) soma bastante além do tamanho puro
+dos pesos do modelo.
 
 ## 3. Criar os arquivos do stack no Cloud Shell
 
@@ -107,8 +114,8 @@ gcloud run deploy ollama-servidor \
   --region southamerica-east1 \
   --no-allow-unauthenticated \
   --port 8080 \
-  --memory 4Gi \
-  --cpu 2 \
+  --memory 8Gi \
+  --cpu 4 \
   --min-instances 0 \
   --max-instances 1 \
   --set-env-vars 'OLLAMA_MODEL=qwen2.5:3b'
