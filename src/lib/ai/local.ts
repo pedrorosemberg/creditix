@@ -25,7 +25,11 @@ export class LocalModelProvider implements AiProvider {
   constructor(
     private readonly modelId = process.env.LOCAL_MODEL_ID || "onnx-community/Qwen2.5-0.5B-Instruct",
     private readonly maxNewTokens = Number(process.env.LOCAL_MODEL_MAX_NEW_TOKENS) || 350,
-    private readonly timeoutMs = Number(process.env.LOCAL_MODEL_TIMEOUT_MS) || 55_000,
+    // Deliberadamente menor que os 60s de maxDuration da Server Action que
+    // chama este provedor — do contrário a Vercel mata a função primeiro
+    // (timeout de infraestrutura, sem chance de resposta amigável) em vez
+    // deste timeout conseguir devolver um erro tratado a tempo.
+    private readonly timeoutMs = Number(process.env.LOCAL_MODEL_TIMEOUT_MS) || 45_000,
     private readonly cacheDir = process.env.LOCAL_MODEL_CACHE_DIR || path.join(process.cwd(), "models-cache"),
   ) {}
 

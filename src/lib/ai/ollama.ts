@@ -66,7 +66,13 @@ export class OllamaProvider implements AiProvider {
         stream: false,
         options: { temperature: 0.2 },
       }),
-      signal: AbortSignal.timeout(60_000),
+      // Deliberadamente menor que os 60s de maxDuration da Server Action
+      // (dividas/[id] e /chat) — se ficasse igual ou maior, a Vercel mata a
+      // função primeiro (timeout de infraestrutura, sem chance de resposta
+      // amigável) em vez do catch abaixo conseguir devolver um erro tratado.
+      // Confirmado em produção: "Task timed out after 60 seconds" batendo
+      // exatamente com este valor antigo.
+      signal: AbortSignal.timeout(45_000),
     });
 
     if (!resposta.ok) {

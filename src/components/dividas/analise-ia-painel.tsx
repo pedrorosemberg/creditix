@@ -1,9 +1,9 @@
 "use client";
 
 import { useActionState } from "react";
-import { Sparkles } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { Markdown } from "@/components/ui/markdown";
 import { gerarAnaliseIaAction, type AnaliseIaState } from "@/app/(app)/dividas/ia-actions";
 import type { AiAnalysis } from "@/types/database.types";
@@ -27,18 +27,30 @@ export function AnaliseIaPainel({
         </CardTitle>
         <form action={formAction}>
           <input type="hidden" name="debt_id" value={dividaId} />
-          <Button type="submit" variant="secondary" size="sm" disabled={pending}>
-            {pending ? "Gerando..." : analiseExistente ? "Gerar novo parecer" : "Gerar parecer"}
-          </Button>
+          <SubmitButton variant="secondary" size="sm" pendingText="Gerando...">
+            {analiseExistente ? "Gerar novo parecer" : "Gerar parecer"}
+          </SubmitButton>
         </form>
       </div>
+
+      {pending && (
+        <div className="mb-3 flex items-center gap-3 rounded-[var(--radius-md)] border border-border bg-surface-muted p-4 text-sm">
+          <Loader2 className="h-5 w-5 shrink-0 animate-spin text-brand-red" />
+          <p>
+            Gerando parecer — pode levar até 1 minuto, o servidor de IA às vezes precisa &quot;acordar&quot; antes de
+            responder. Não saia desta página.
+          </p>
+        </div>
+      )}
+
       {state?.error && <p className="text-sm text-danger">{state.error}</p>}
-      {analiseExistente ? (
+      {analiseExistente && !pending ? (
         <div className="rounded-[var(--radius-md)] bg-surface-muted p-4">
           <Markdown>{analiseExistente.content}</Markdown>
         </div>
       ) : (
-        !state?.error && (
+        !state?.error &&
+        !pending && (
           <p className="text-sm text-foreground-muted">
             Gere um parecer objetivo processado inteiramente no servidor (Ollama local por padrão, ou Gemini se
             configurado) sobre a melhor estratégia para esta dívida.

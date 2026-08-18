@@ -46,8 +46,13 @@ export async function loginAction(_prev: AuthState, formData: FormData): Promise
     return { error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
   }
 
+  const captchaToken = (formData.get("captchaToken") as string) || undefined;
+
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword(parsed.data);
+  const { error } = await supabase.auth.signInWithPassword({
+    ...parsed.data,
+    options: captchaToken ? { captchaToken } : undefined,
+  });
   if (error) {
     return { error: "E-mail ou senha inválidos." };
   }

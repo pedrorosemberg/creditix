@@ -15,13 +15,19 @@ function origemSupabase(): string | null {
   }
 }
 
+// Cloudflare Turnstile (CAPTCHA no login, opcional) só entra na CSP se de
+// fato configurado — evita abrir a política pra um domínio externo que o
+// app não usa por padrão.
+const turnstileAtivo = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
+
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline'${turnstileAtivo ? " https://challenges.cloudflare.com" : ""}`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   `img-src 'self' data: https://cdn.metadax.com.br${origemSupabase() ? ` ${origemSupabase()}` : ""}`,
   "connect-src 'self'",
+  `frame-src ${turnstileAtivo ? "https://challenges.cloudflare.com" : "'none'"}`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
