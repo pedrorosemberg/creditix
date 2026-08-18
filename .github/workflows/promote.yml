@@ -37,10 +37,13 @@ jobs:
           fetch-depth: 0
 
       - name: Verificar que o PROMOTE_PAT está configurado
-        if: ${{ secrets.PROMOTE_PAT == '' }}
+        env:
+          PROMOTE_PAT: ${{ secrets.PROMOTE_PAT }}
         run: |
-          echo "::error::Secret PROMOTE_PAT não configurado — a PR não pode ser criada de um jeito que dispare o Test Suite automaticamente. Veja docs/ENVIRONMENTS.md#promoção-automática."
-          exit 1
+          if [ -z "$PROMOTE_PAT" ]; then
+            echo "::error::Secret PROMOTE_PAT não configurado — a PR não pode ser criada de um jeito que dispare o Test Suite automaticamente. Veja docs/ENVIRONMENTS.md#promoção-automática."
+            exit 1
+          fi
 
       - name: Definir origem/destino
         id: branches
