@@ -1,11 +1,23 @@
 import Link from "next/link";
 import { LogOut, UserRound } from "lucide-react";
 import { logoutAction } from "@/app/(auth)/actions";
+import { MobileNav } from "@/components/layout/mobile-nav";
 
-export function Topbar({ nome, avatarUrl }: { nome: string | null; avatarUrl: string | null }) {
+export function Topbar({
+  nome,
+  avatarUrl,
+  isAdminGlobal = false,
+}: {
+  nome: string | null;
+  avatarUrl: string | null;
+  isAdminGlobal?: boolean;
+}) {
   return (
     <header className="flex h-16 items-center justify-between border-b border-border bg-surface px-4 md:px-6">
-      <span className="font-display text-base text-brand-red md:hidden">Creditix</span>
+      <div className="flex items-center gap-2">
+        <MobileNav isAdminGlobal={isAdminGlobal} />
+        <span className="font-display text-base text-brand-red md:hidden">Creditix</span>
+      </div>
       <div className="ml-auto flex items-center gap-3">
         <span className="text-sm text-foreground-muted">Olá, {nome ?? "usuário"}</span>
         <Link
