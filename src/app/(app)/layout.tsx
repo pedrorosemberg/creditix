@@ -31,7 +31,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <TourBoasVindas />
       <Sidebar isAdminGlobal={isAdminGlobal} />
       <div className="flex flex-1 flex-col">
-        <Topbar nome={profile?.display_name ?? user.email ?? null} avatarUrl={avatarSignedUrl} />
+        <Topbar
+          nome={profile?.display_name ?? user.email ?? null}
+          avatarUrl={avatarSignedUrl}
+          isAdminGlobal={isAdminGlobal}
+        />
         <main className="flex-1 bg-surface-muted p-4 md:p-6">{children}</main>
         <Footer />
       </div>
