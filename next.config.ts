@@ -26,7 +26,7 @@ const csp = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   `img-src 'self' data: https://cdn.metadax.com.br${origemSupabase() ? ` ${origemSupabase()}` : ""}`,
-  "connect-src 'self'",
+  `connect-src 'self'${turnstileAtivo ? " https://challenges.cloudflare.com" : ""}`,
   `frame-src ${turnstileAtivo ? "https://challenges.cloudflare.com" : "'none'"}`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
