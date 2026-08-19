@@ -54,6 +54,12 @@ export async function loginAction(_prev: AuthState, formData: FormData): Promise
     options: captchaToken ? { captchaToken } : undefined,
   });
   if (error) {
+    // Mensagem ao usuário é sempre genérica (não vaza se o e-mail existe ou
+    // se foi o captcha que falhou) — mas o erro real do Supabase precisa
+    // ficar em algum lugar, senão "captcha verification failed" (Attack
+    // Protection mal configurado) e "senha errada" ficam indistinguíveis
+    // para quem for depurar um relato de "não consigo entrar".
+    console.error("[loginAction] Falha no login:", error.message);
     return { error: "E-mail ou senha inválidos." };
   }
 
