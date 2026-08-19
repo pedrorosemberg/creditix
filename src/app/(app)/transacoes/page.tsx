@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardTitle } from "@/components/ui/card";
 import { DeleteIconButton } from "@/components/ui/delete-icon-button";
+import { CampoLinha } from "@/components/ui/campo-linha";
 import { formatarData, formatarMoeda, hojeBrasil } from "@/lib/utils";
 import { TIPO_TRANSACAO_LABEL } from "@/lib/constants/labels";
 import { RECORRENCIA_LABEL } from "@/lib/finance/periodicidade";
@@ -25,7 +26,34 @@ export default async function TransacoesPage() {
         <NovaTransacaoForm action={criarTransacaoAction} hoje={hoje} dividas={dividas ?? []} />
       </Card>
 
-      <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-border bg-surface">
+      <div className="space-y-3 md:hidden">
+        {(transacoes ?? []).map((t) => (
+          <div key={t.id} className="rounded-[var(--radius-md)] border border-border bg-surface p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="font-medium">{t.descricao}</p>
+                <p className="text-xs text-foreground-muted">{formatarData(t.data)}</p>
+              </div>
+              <form action={excluirTransacaoAction}>
+                <input type="hidden" name="id" value={t.id} />
+                <DeleteIconButton title="Excluir transação" />
+              </form>
+            </div>
+            <div className="mt-2 divide-y divide-border">
+              <CampoLinha label="Tipo">{TIPO_TRANSACAO_LABEL[t.tipo]}</CampoLinha>
+              <CampoLinha label="Recorrência">{RECORRENCIA_LABEL[t.recorrencia]}</CampoLinha>
+              <CampoLinha label="Valor">
+                <span className={t.tipo === "receita" ? "text-success" : "text-danger"}>
+                  {t.tipo === "receita" ? "+" : "-"}
+                  {formatarMoeda(Number(t.valor))}
+                </span>
+              </CampoLinha>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-[var(--radius-lg)] border border-border bg-surface md:block">
         <table className="w-full min-w-[640px] text-sm">
           <thead className="border-b border-border bg-surface-muted text-left text-foreground-muted">
             <tr>

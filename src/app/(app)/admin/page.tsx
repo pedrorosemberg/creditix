@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { ShieldCheck, Users } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/card";
+import { CampoLinha } from "@/components/ui/campo-linha";
 import { verificarAdminGlobal, listarUsuariosAdmin } from "@/lib/supabase/admin-global";
 import { formatarData, formatarDataHora } from "@/lib/utils";
 
@@ -31,7 +32,28 @@ export default async function AdminPage() {
           outros usuários é exibida aqui — a função no banco que alimenta esta tela nunca retorna esses
           dados.
         </p>
-        <div className="overflow-x-auto">
+        <div className="space-y-3 md:hidden">
+          {usuarios.map((u) => (
+            <div key={u.id} className="rounded-[var(--radius-md)] border border-border p-4">
+              <p className="font-medium">{u.email ?? "—"}</p>
+              <p className="text-xs text-foreground-muted">{u.displayName ?? "—"}</p>
+              <div className="mt-2 divide-y divide-border">
+                <CampoLinha label="ID">
+                  <span className="font-mono text-xs">{u.id}</span>
+                </CampoLinha>
+                <CampoLinha label="Cadastro">{formatarData(u.createdAt)}</CampoLinha>
+                <CampoLinha label="Último acesso">
+                  {u.lastSignInAt ? formatarDataHora(u.lastSignInAt) : "nunca"}
+                </CampoLinha>
+                <CampoLinha label="Convidou (pendente)">{u.indicacoesPendentes}</CampoLinha>
+                <CampoLinha label="Convidou (aceito)">{u.indicacoesAceitas}</CampoLinha>
+                <CampoLinha label="Indicados saindo das dívidas">{u.indicadosQuitandoDividas}</CampoLinha>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[840px] text-left text-sm">
             <thead>
               <tr className="border-b border-border text-xs uppercase text-foreground-muted">

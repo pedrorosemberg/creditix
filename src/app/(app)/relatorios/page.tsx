@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Field, Input, Label } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { CampoLinha } from "@/components/ui/campo-linha";
 import { VeredictoBadge } from "@/components/dividas/veredicto-badge";
 import { formatarData, formatarMoeda } from "@/lib/utils";
 import { STATUS_DIVIDA_LABEL, TIPO_TRANSACAO_LABEL } from "@/lib/constants/labels";
@@ -195,7 +196,28 @@ export default async function RelatoriosPage({
             <CardDescription>Nenhuma dívida no filtro selecionado.</CardDescription>
           ) : (
             <>
-              <div className="mt-3 overflow-x-auto">
+              <div className="mt-3 space-y-3 md:hidden">
+                {dados.dividas.map((d) => (
+                  <div key={d.id} className="rounded-[var(--radius-md)] border border-border p-4">
+                    <Link href={`/dividas/${d.id}`} className="font-medium text-brand-red hover:underline">
+                      {d.credor_nome}
+                    </Link>
+                    <div className="mt-2 divide-y divide-border">
+                      <CampoLinha label="Valor atual">{formatarMoeda(Number(d.valor_atual))}</CampoLinha>
+                      <CampoLinha label="Status">
+                        <Badge tone={d.status === "quitada" ? "success" : "neutral"}>
+                          {STATUS_DIVIDA_LABEL[d.status]}
+                        </Badge>
+                      </CampoLinha>
+                      <CampoLinha label="Veredicto jurídico">
+                        <VeredictoBadge veredicto={d.veredictoJuridico} />
+                      </CampoLinha>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-3 hidden overflow-x-auto md:block">
                 <table className="w-full min-w-[560px] text-sm">
                   <thead className="border-b border-border text-left text-foreground-muted">
                     <tr>
@@ -242,7 +264,25 @@ export default async function RelatoriosPage({
             <CardDescription>Nenhuma transação no filtro selecionado.</CardDescription>
           ) : (
             <>
-              <div className="mt-3 overflow-x-auto">
+              <div className="mt-3 space-y-3 md:hidden">
+                {dados.transacoes.map((t) => (
+                  <div key={t.id} className="rounded-[var(--radius-md)] border border-border p-4">
+                    <p className="font-medium">{t.descricao}</p>
+                    <p className="text-xs text-foreground-muted">{formatarData(t.data)}</p>
+                    <div className="mt-2 divide-y divide-border">
+                      <CampoLinha label="Tipo">{TIPO_TRANSACAO_LABEL[t.tipo]}</CampoLinha>
+                      <CampoLinha label="Valor">
+                        <span className={t.tipo === "receita" ? "text-success" : "text-danger"}>
+                          {t.tipo === "receita" ? "+" : "-"}
+                          {formatarMoeda(Number(t.valor))}
+                        </span>
+                      </CampoLinha>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-3 hidden overflow-x-auto md:block">
                 <table className="w-full min-w-[560px] text-sm">
                   <thead className="border-b border-border text-left text-foreground-muted">
                     <tr>
